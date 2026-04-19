@@ -1,0 +1,46 @@
+# ── Secrets ───────────────────────────────────────────────────────────────────
+.env
+*.pem
+*.key
+
+# ── Generated data (cache + PDFs — rebuilt at runtime) ────────────────────────
+# Ignore contents but keep directory structure markers (.gitkeep)
+data/cache/*
+!data/cache/.gitkeep
+data/pdfs/*
+!data/pdfs/inbox/
+data/pdfs/inbox/*
+!data/pdfs/inbox/.gitkeep
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+
+# ── Claude Code session data ──────────────────────────────────────────────────
+.claude/
+
+# ── Editors ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
