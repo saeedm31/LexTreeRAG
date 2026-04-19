@@ -199,7 +199,3 @@ LexTreeRAG/
 Pull requests are welcome. Please open an issue first to discuss any significant changes.
 
 ---
-
-## License
-
-MIT © 2025 Shojjat Panah
