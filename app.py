@@ -1,6 +1,6 @@
 """
-EuroLex RAG — Streamlit Web UI
-================================
+LexTreeRAG — Streamlit Web UI
+==============================
 Run with:
     conda activate rag_app
     streamlit run app.py
@@ -41,7 +41,7 @@ load_dotenv()
 
 # ── page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="EuroLex RAG",
+    page_title="LexTreeRAG",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -985,8 +985,8 @@ def run_query(
 #  SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.title("⚖️ EuroLex RAG")
-    st.caption("Vectorless · LLM Reasoning Tree · Live EUR-Lex")
+    st.title("⚖️ LexTreeRAG")
+    st.caption("Vectorless Legal RAG via Article Trees · Live EUR-Lex")
     st.divider()
 
     # API key

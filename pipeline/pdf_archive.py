@@ -1,5 +1,5 @@
 """
-Local PDF archive for EuroLex RAG.
+Local PDF archive for LexTreeRAG.
 
 Stores raw PDF bytes downloaded from CELLAR at:
     data/pdfs/{year}/{safe_celex}.pdf

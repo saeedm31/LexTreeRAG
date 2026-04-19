@@ -1,8 +1,9 @@
-# EuroLex RAG — Technical Documentation
+# LexTreeRAG — Technical Documentation
+> Vectorless Legal RAG via Article Trees
 
 ## Overview
 
-**EuroLex RAG** is a "Vectorless Reasoning-Tree" Retrieval-Augmented Generation system
+**LexTreeRAG** is a vectorless Retrieval-Augmented Generation system
 for querying EU legal documents published on [EUR-Lex](https://eur-lex.europa.eu).
 It requires no vector database or pre-built embeddings. Instead, it uses Claude LLMs
 to navigate structured article trees in real time.
@@ -36,7 +37,7 @@ never re-download or re-process the same document.
 ## Project Structure
 
 ```
-eurolex_rag/
+lextreerag/
 ├── main.py                     # CLI entry point (REPL + single-question mode)
 ├── app.py                      # Streamlit web UI
 ├── requirements.txt
@@ -560,9 +561,8 @@ python main.py -q "..." --cache-dir ./data/cache --max-laws 10 --save-report
 ```bash
 conda activate rag_app
 streamlit run app.py
+# Opens LexTreeRAG at http://localhost:8501
 ```
-
-Opens at **http://localhost:8501**.
 
 **Sidebar controls:**
 

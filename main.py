@@ -1,6 +1,6 @@
 """
-EuroLex RAG — Vectorless Reasoning-Tree Pipeline
-=================================================
+LexTreeRAG — Vectorless Legal RAG via Article Trees
+===================================================
 
 Usage:
     python main.py
