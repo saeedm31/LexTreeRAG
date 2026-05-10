@@ -1,5 +1,10 @@
 # Cache Manager
 
+![Cache Manager UI](screenshots/cache-page.png)
+*Cache Manager tab — cached tree table, summary metrics, and uploaded files archive*
+
+
+
 Browse and manage the three local data stores that prevent re-fetching EUR-Lex documents on every query.
 
 **File:** `app.py` — `with tab_cache:`

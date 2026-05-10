@@ -1,5 +1,10 @@
 # References Tab
 
+![References page UI](screenshots/references-page.png)
+*References tab — article cards with CELEX identifier, year, summary, and EUR-Lex link*
+
+
+
 Shows every EUR-Lex article used to produce the last answer. Each entry is a styled card with CELEX, year, article title, summary, and a direct EUR-Lex link.
 
 **File:** `app.py` — `with tab_refs:`

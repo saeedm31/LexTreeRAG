@@ -1,5 +1,10 @@
 # Chat — Ask EUR-Lex
 
+![Chat page UI](screenshots/chat-page.png)
+*Ask EUR-Lex tab — question input, streamed answer, keyword analysis table, and confidence metrics*
+
+
+
 The main interface. Type a legal question, get a cited answer grounded in live EUR-Lex documents.
 
 **File:** `app.py` — `with tab_ask:`
