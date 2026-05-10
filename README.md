@@ -1,5 +1,7 @@
 # ⚖️ LexTreeRAG
 
+https://saeedm31.github.io/LexTreeRAG/
+
 > **Vectorless Legal RAG via Article Trees**
 
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
