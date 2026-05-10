@@ -1,0 +1,68 @@
+site_name: LexTreeRAG
+site_description: Vectorless Legal RAG via Article Trees — Live EUR-Lex
+site_url: https://saeedm31.github.io/LexTreeRAG
+repo_url: https://github.com/saeedm31/LexTreeRAG
+repo_name: saeedm31/LexTreeRAG
+edit_uri: ""
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - UI Pages:
+    - Chat — Ask EUR-Lex: chat.md
+    - References Tab: references.md
+    - Cache Manager: cache-manager.md
+  - Technical Reference:
+    - Pipeline Architecture: pipeline.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/saeedm31/LexTreeRAG
