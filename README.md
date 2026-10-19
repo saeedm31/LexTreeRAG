@@ -1,20 +1,58 @@
 # ⚖️ LexTreeRAG
 
-https://saeedm31.github.io/LexTreeRAG/
-
-> **Vectorless Legal RAG via Article Trees**
+**Ask a question about EU law. Get an answer that cites the exact articles, pulled live from EUR-Lex.**
 
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit)](https://streamlit.io/)
-[![Claude Opus 4.6](https://img.shields.io/badge/LLM-Claude%20Opus%204.6-blueviolet)](https://www.anthropic.com/)
+[![Claude](https://img.shields.io/badge/LLM-Claude-blueviolet)](https://www.anthropic.com/)
 [![EUR-Lex](https://img.shields.io/badge/Data-EUR--Lex%20CELLAR-003399)](https://eur-lex.europa.eu/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-LexTreeRAG answers legal questions about EU law by reasoning over live EUR-Lex documents — **without any vector database or embeddings**. It downloads regulations as PDFs, parses them into structured Article Trees, and uses Claude to navigate the tree and generate grounded answers. A confidence-gated retry loop and keyword discovery UI handle hard cross-domain queries automatically.
+📖 **[Documentation](https://saeedm31.github.io/LexTreeRAG/)** · 🚀 **[Quick start](#-quick-start)** · 🧠 **[How it works](#-how-it-works)**
+
+![LexTreeRAG chat page](docs/screenshots/chat-page.png)
 
 ---
 
-## Architecture
+## 💡 Why it exists
+
+EU law is huge, split across thousands of regulations, and written for lawyers.
+Finding *which article* answers your question can take hours.
+
+LexTreeRAG does that search for you:
+
+- **Finds the right laws** — searches the official EUR-Lex database live, no manual browsing
+- **Reads them like a lawyer** — navigates each regulation by its articles, the way you'd use a table of contents
+- **Shows its sources** — every answer links back to the exact articles it used
+- **Checks itself** — scores its own answer and retries with a wider search when confidence is low
+
+> **Example:** *"What are the obligations of data controllers under GDPR?"*
+> → finds Regulation (EU) 2016/679, picks the relevant articles, and returns a grounded answer with article references.
+
+### Why no vector database?
+
+Most RAG systems cut documents into chunks and search them with embeddings.
+Laws already have a structure — articles, paragraphs, a clear index — so LexTreeRAG uses it.
+The model reads a short "table of contents" of each regulation and picks the articles it needs.
+That gives article-level precision with no embedding model and no vector DB to run.
+
+---
+
+## ✨ Features
+
+- **Vectorless retrieval** — no embeddings, no vector DB
+- **Live EUR-Lex search** via SPARQL on the CELLAR endpoint (free, no auth)
+- **Smart search terms** — EU-domain synonyms (e.g. *motorcycle* → *motor vehicle, L-category*)
+- **Confidence gate** — coverage and grounding scores, with up to 2 automatic retries
+- **Keyword Discovery** — when retries fail, shows what was missed and suggests new terms
+- **Structured answers** — optional Obligations / Rights / Definitions / Exceptions / Procedure view
+- **Bring your own documents** — upload PDF, TXT or MD and query them alongside EUR-Lex
+- **Local cache** — each law is downloaded and parsed once, then reused
+- **Optional Gemini panel** — a second answer grounded in Google Search, for comparison
+
+---
+
+## 🧠 How it works
 
 ```
 User Question
@@ -24,9 +62,9 @@ User Question
 │  1. Keyword Extraction      (Haiku)      │
 │  2. SPARQL Search  →  EUR-Lex CELLAR     │
 │     Compound AND · synonym expansion     │
-│  3. PDF Archive  (local, reused forever) │
+│  3. PDF Archive  (local, reused)         │
 │  4. Article Tree Builder    (Haiku)      │
-│     normalize → parse → sub-chunk       │
+│     normalize → parse → sub-chunk        │
 └────────────────────┬─────────────────────┘
                      │
           ┌──────────▼───────────┐
@@ -37,7 +75,7 @@ User Question
                      │
           ┌──────────▼───────────────────────┐
           │  6. Answer Generation            │
-          │     Claude Opus 4.6 (streaming)  │
+          │     Claude Opus (streaming)      │
           └──────────┬───────────────────────┘
                      │
           ┌──────────▼───────────────────────┐
@@ -48,156 +86,96 @@ User Question
           └──────────────────────────────────┘
 ```
 
-**Why no vectors?**  The slim tree mimics a table of contents. Claude navigates it like a lawyer scanning a regulation index — article-level precision, zero embedding overhead.
+1. **Search** — Haiku extracts search terms and the year; a SPARQL query finds matching laws on EUR-Lex. Original legislation is preferred over consolidated versions.
+2. **Archive** — each PDF is saved locally on first download, so later queries need no network call.
+3. **Article tree** — the PDF is cleaned and split into article nodes. Long articles are split into sub-nodes. Haiku writes a one-line summary for each.
+4. **Navigate** — Haiku sees only the article IDs and summaries (~3,000 tokens for a 60-article law) and scores each one 0–10. Articles scoring 4+ move on.
+5. **Answer and check** — Claude Opus streams the answer from the selected articles. Haiku then scores coverage and grounding. Low scores trigger a wider search, and the best answer wins.
+
+Full details are in the [documentation](https://saeedm31.github.io/LexTreeRAG/) and [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md).
 
 ---
 
-## Features
-
-- **Vectorless** — no embedding model, no vector DB, no cosine similarity
-- **Live EUR-Lex search** via SPARQL (CELLAR endpoint — free, no auth required)
-- **Local PDF + JSON cache** — documents downloaded once, reused forever across sessions
-- **PDF inbox** — drop any PDF into `data/pdfs/inbox/` and it's auto-indexed on next startup
-- **Compound AND search** with EU-domain synonym expansion (e.g. *motorcycle* → *motor vehicle, l-category, quadricycle*)
-- **Sub-chunking** — long articles split into navigable sub-nodes; no content truncation
-- **3-attempt confidence-gated retry loop** — obligation expansion → broad search → best answer shown
-- **Keyword Discovery UI** — when all retries fail, shows missing aspects, hit stats, and suggested search terms
-- **Structured JSON output** mode — answer rendered as Obligations / Rights / Definitions / Exceptions / Procedure
-- **Hybrid Gemini layer** — optional second answer panel powered by Google Search grounding
-- **Upload your own PDFs/TXT** and query them alongside EUR-Lex documents
-
----
-
-## Quick Start
+## 🚀 Quick start
 
 ```bash
 git clone https://github.com/saeedm31/LexTreeRAG.git
 cd LexTreeRAG
-
 pip install -r requirements.txt
 
-cp .env.example .env        # then add your ANTHROPIC_API_KEY
-
+cp .env.example .env        # add your ANTHROPIC_API_KEY
 streamlit run app.py        # opens http://localhost:8501
 ```
 
-> **Python 3.9+** required.
+Requires **Python 3.9+**.
 
----
-
-## Configuration
-
-Copy `.env.example` to `.env` and fill in the values:
+### Configuration
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | ✅ | Get one at [console.anthropic.com](https://console.anthropic.com/) |
-| `GEMINI_API_KEY` | Optional | Enables hybrid Gemini + Google Search panel — free tier at [aistudio.google.com](https://aistudio.google.com/) |
-| `CACHE_DIR` | Optional | Directory for JSON article trees (default `./data/cache`) |
-| `PDF_ARCHIVE_DIR` | Optional | Directory for raw PDF storage (default `./data/pdfs`) |
-| `MAX_LAWS_PER_YEAR` | Optional | Max documents per search pass (default `5`) |
+| `ANTHROPIC_API_KEY` | ✅ | From [console.anthropic.com](https://console.anthropic.com/) |
+| `GEMINI_API_KEY` | Optional | Turns on the Gemini comparison panel ([free tier](https://aistudio.google.com/)) |
+| `CACHE_DIR` | Optional | Where article trees are stored (default `./data/cache`) |
+| `PDF_ARCHIVE_DIR` | Optional | Where PDFs are stored (default `./data/pdfs`) |
+| `MAX_LAWS_PER_YEAR` | Optional | Laws fetched per search (default `5`) |
+
+### Command line
+
+```bash
+python main.py                                   # interactive
+python main.py -q "What are GDPR obligations for data controllers?"
+python main.py -q "..." --max-laws 10 --save-report
+```
 
 ---
 
-## Web UI
+## 🖥️ The app
 
-```bash
-streamlit run app.py
-```
-
-1. **Enter your API key** in the sidebar — validated on entry
-2. **Ask a question** in the chat box (year auto-detected, or set it in the sidebar)
-3. The pipeline searches EUR-Lex, builds article trees, navigates them, and streams the answer
-4. **Confidence metrics** appear below the answer (Coverage %, Grounding %, overall score)
-5. If confidence is low, **automatic retries** run silently and the best answer is shown
-6. The **📊 Keyword Analysis** expander lets you focus the model on specific terms and re-run
-7. If all retries fail, the **Keyword Discovery UI** shows what was missed and lets you add search terms
-
-**Sidebar controls:**
-
-| Control | Description |
+| | |
 |---|---|
-| Year filter | Auto-detect from question, or pin a specific year ± range |
-| Max laws | Documents to retrieve per query (1–15) |
-| CELEX sectors | Filter by document type (Legislation, Case-law, Treaties…) |
-| Output format | Streaming prose (default) or structured JSON sections |
-| Answer source | EUR-Lex only · EUR-Lex + uploads · Uploads only |
-| File uploader | PDF, TXT, MD — parsed once, saved to local archive |
+| **💬 Ask EUR-Lex** | Chat, confidence scores, keyword analysis |
+| **📋 References** | Source cards with EUR-Lex links, JSON export |
+| **🗄️ Cache Manager** | Browse cached laws and the PDF archive |
 
-**Tabs:**
+<details>
+<summary>More screenshots</summary>
 
-- **💬 Ask EUR-Lex** — chat interface, confidence scores, keyword analysis
-- **📋 References** — reference cards with EUR-Lex links + JSON download
-- **🗄️ Cache Manager** — browse/delete cached trees, view PDF archive, inbox path
+![References page](docs/screenshots/references-page.png)
+![Cache manager](docs/screenshots/cache-page.png)
 
----
-
-## CLI
-
-```bash
-# Interactive REPL
-python main.py
-
-# Single question
-python main.py -q "What are GDPR obligations for data controllers in 2018?"
-
-# Custom options
-python main.py -q "..." --max-laws 10 --cache-dir ./data/cache --save-report
-```
-
-| Flag | Default | Description |
-|---|---|---|
-| `-q` / `--question` | interactive | Your legal question |
-| `--cache-dir` | `./data/cache` | JSON tree cache location |
-| `--max-laws` | `5` | Max EUR-Lex laws to retrieve |
-| `--save-report` | off | Save answer + references to a JSON file |
+</details>
 
 ---
 
-## How It Works
-
-1. **Keyword extraction + search** — Claude Haiku extracts precise search terms and year; SPARQL queries EUR-Lex CELLAR titles using a compound AND strategy with EU-domain synonym expansion. Sector-3 (original legislation) is prioritised over consolidated snapshots.
-
-2. **Local archive** — raw PDFs are saved to `data/pdfs/{year}/{celex}.pdf` on first download. Subsequent queries load from disk — no network call.
-
-3. **Article Tree Builder** — pypdf extraction artifacts (`Ar ticle 5` → `Article 5`) are normalised, then the document is split into Article nodes. Articles over 5 000 chars are sub-chunked into navigable parts. Claude Haiku writes a 1-sentence summary per node.
-
-4. **Tree Navigation** — Claude Haiku receives only the *slim tree* (article IDs + summaries, no full text — ~3 000 tokens for a 60-article regulation). It selects the articles most relevant to the question, scored 0–10. Only nodes scoring ≥ 4 are passed forward.
-
-5. **Answer + confidence gate** — Claude Opus 4.6 streams a grounded answer. A Haiku pass scores Coverage and Grounding (0–100). If `score < 50` or `coverage < 40`, two silent retries run automatically (obligation-expanded keywords → broad search with no year filter). The best answer wins.
-
----
-
-## Project Structure
+## 📁 Project structure
 
 ```
 LexTreeRAG/
 ├── app.py                      # Streamlit web UI
 ├── main.py                     # CLI entry point
-├── requirements.txt
-├── .env.example
 ├── pipeline/
-│   ├── keyword_extractor.py    # Haiku keyword + year extraction
+│   ├── keyword_extractor.py    # Search terms + year
 │   ├── eurolex_client.py       # SPARQL search + CELLAR fetch
-│   ├── pdf_archive.py          # Local PDF archive + inbox scanner
-│   ├── tree_builder.py         # Article tree parser + sub-chunker
-│   ├── tree_navigator.py       # LLM-based article selection
-│   ├── answer_verifier.py      # Confidence scoring + missing aspects
-│   ├── clause_ranker.py        # Obligation/list signal scoring
-│   ├── doc_ingester.py         # Uploaded file → tree
-│   ├── query_classifier.py     # Question type + sub-question decomposition
-│   └── gemini_search.py        # Optional Gemini hybrid layer
-├── data/
-│   ├── cache/                  # JSON article trees (gitignored)
-│   └── pdfs/
-│       └── inbox/              # Drop PDFs here for auto-indexing
+│   ├── pdf_archive.py          # Local PDF archive + inbox
+│   ├── tree_builder.py         # Article tree parser
+│   ├── tree_navigator.py       # LLM article selection
+│   ├── answer_verifier.py      # Confidence scoring
+│   ├── clause_ranker.py        # Obligation signal scoring
+│   ├── doc_ingester.py         # Uploaded files → tree
+│   ├── query_classifier.py     # Question type + sub-questions
+│   └── gemini_search.py        # Optional Gemini layer
+├── data/                       # Cache + PDF archive (gitignored)
 └── tests/
 ```
 
 ---
 
-## Contributing
+## ⚠️ Disclaimer
 
-Pull requests are welcome. Please open an issue first to discuss any significant changes.
+LexTreeRAG is a research and demo tool. Its answers are not legal advice — always check the cited articles.
 
----
+## 🤝 Contributing
+
+Pull requests are welcome. Please open an issue first for larger changes.
+
+Built by [Saeed Hojjatpanah](https://github.com/saeedm31).
