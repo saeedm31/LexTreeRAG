@@ -111,9 +111,11 @@ class TestParseArticles:
         assert all(len(a["text"]) <= 6000 for a in articles)
 
     def test_fallback_for_no_articles(self):
+        # No "Article N" headers: the text is kept as paragraph-aware chunks, not dropped
         articles = parse_articles("No article headers here at all.")
         assert len(articles) == 1
-        assert articles[0]["id"] == "doc_body"
+        assert articles[0]["id"] == "chunk_1"
+        assert articles[0]["text"] == "No article headers here at all."
 
     def test_single_article(self):
         articles = parse_articles(ONE_ARTICLE_MARKDOWN)

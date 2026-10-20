@@ -6,6 +6,7 @@
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit)](https://streamlit.io/)
 [![Claude](https://img.shields.io/badge/LLM-Claude-blueviolet)](https://www.anthropic.com/)
 [![EUR-Lex](https://img.shields.io/badge/Data-EUR--Lex%20CELLAR-003399)](https://eur-lex.europa.eu/)
+[![Tests](https://github.com/saeedm31/LexTreeRAG/actions/workflows/tests.yml/badge.svg)](https://github.com/saeedm31/LexTreeRAG/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 📖 **[Documentation](https://saeedm31.github.io/LexTreeRAG/)** · 🚀 **[Quick start](#-quick-start)** · 🧠 **[How it works](#-how-it-works)**
@@ -165,8 +166,17 @@ LexTreeRAG/
 │   ├── query_classifier.py     # Question type + sub-questions
 │   └── gemini_search.py        # Optional Gemini layer
 ├── data/                       # Cache + PDF archive (gitignored)
-└── tests/
+└── tests/                      # 200+ unit tests, no API key needed
 ```
+
+## ✅ Tests
+
+```bash
+pip install pytest
+pytest -q
+```
+
+The tests run offline (no API calls) on every push with GitHub Actions. They cover article parsing, keyword and obligation-signal extraction, clause ranking, tree navigation and end-to-end retrieval scenarios on sample regulation text.
 
 ---
 
