@@ -1,0 +1,4 @@
+# Extra packages for the AWS deployment (Claude on Amazon Bedrock, usage in DynamoDB).
+-r requirements.txt
+anthropic[bedrock]>=1.0
+boto3>=1.34
