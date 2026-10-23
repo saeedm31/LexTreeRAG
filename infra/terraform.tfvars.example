@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and edit.
+
+region = "eu-north-1"
+
+# Who may open the app. Your own IP for a first test: run `curl -s https://checkip.amazonaws.com`
+allowed_cidrs = ["203.0.113.7/32"]
+
+# Optional: a domain turns on HTTPS and login (Cognito).
+# domain_name     = "lex.example.com"
+# route53_zone_id = "Z0123456789ABC"   # if the domain is in Route 53
+
+default_team            = "legal"
+team_monthly_budget_eur = 50
+alert_email             = "you@example.com"
