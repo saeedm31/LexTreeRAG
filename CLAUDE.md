@@ -58,3 +58,11 @@ LexTreeRAG answers legal questions by navigating structured Article Trees — no
 - The **JSON tree cache and PDF archive are independent**: delete `data/cache/` to force tree rebuilds (e.g. after `tree_builder.py` changes) while keeping PDFs so no re-download occurs.
 - EUR-Lex **sector 3** = original legislation (preferred); **sector 0** = consolidated snapshots (often lack PDF/HTML content in CELLAR). Pass 0 restricts to sector 3; sector 0 results get a −0.5 ranking penalty.
 - Tests do **not call the Anthropic API** — they mock navigator output with realistic article texts and test the Python-side pipeline components (`clause_ranker`, `keyword_extractor`, `tree_builder`, `tree_navigator`).
+
+## Cost tracking
+
+- `pipeline/metering.py` wraps the Anthropic client (`MeteredClient`) and the Gemini client (`MeteredGemini`). Every call's `usage` goes into a per-session `Meter`, labelled with the pipeline step found from the calling function's name (`STEP_OF`). New pipeline functions that call a model should be added to `STEP_OF`.
+- `pipeline/costs.py` holds the price table (USD per 1M tokens), the answer-model list and `thinking_for()` (Haiku 4.5 rejects adaptive thinking).
+- `app.py` wraps `build_tree` to store each law's indexing cost in its cached JSON (`index_usage`) and to count what a cache hit saved.
+- `pipeline/usage.py` is the ledger kept in the browser's localStorage (read once per visit with a `st.components.v2` component, written with `components.html`). Budget: AI answers stop at 100%.
+- `pipeline/demo.py` records a finished answer (with its real token counts) and replays files from `demo/examples/` in Demo mode.
