@@ -50,6 +50,9 @@ That gives article-level precision with no embedding model and no vector DB to r
 - **Bring your own documents** — upload PDF, TXT or MD and query them alongside EUR-Lex
 - **Local cache** — each law is downloaded and parsed once, then reused
 - **Optional Gemini panel** — a second answer grounded in Google Search, for comparison
+- **Shows what each answer costs** — tokens and euros per answer, split by pipeline step, with a monthly budget
+- **Choose the answer model** — Opus, Sonnet or Haiku, with the price per question shown before you ask
+- **Demo mode, no key needed** — replays real recorded answers with their real token counts
 
 ---
 
@@ -97,6 +100,34 @@ Full details are in the [documentation](https://saeedm31.github.io/LexTreeRAG/) 
 
 ---
 
+## 💶 What each answer costs
+
+One question makes several model calls: Haiku sorts the question, picks search words, indexes new laws,
+chooses articles and checks the answer; the chosen model (Claude Opus 4.6 by default) writes the answer.
+LexTreeRAG counts every call and shows the bill:
+
+- **Under each answer:** the number of model calls, tokens in and out, and the price in euros, plus
+  **Where the money went**: the cost of each step and its share. Token counts come from the provider's reply,
+  so they are exact (thinking tokens included); euros are estimated from list prices.
+- **Indexing a law is a one-time cost.** Each law is summarised once and cached; when a later question reuses
+  it, the answer shows what the cache saved.
+- **💶 Usage tab:** spend this session, today, this month and since the last reset; spend by step, by model
+  and per day; the most expensive questions; savings from the cache; a call-by-call log with CSV download.
+- **Monthly budget:** a warning at 80%; at 100% AI answers stop until next month, a higher budget or a reset.
+  Budget, USD→EUR rate and prices are editable. Everything is kept in your browser only; your key is never stored.
+- **Answer model picker:** Opus 4.6 / 5.5, Sonnet 4.6 / 5.5, Haiku 4.5 / 5.5, with a rough price per question
+  before you ask and your real average after.
+- **Command line too:** `python main.py` prints the same cost line after each answer.
+
+### Demo mode (no key)
+
+**▶️ Demo** replays answers that were recorded with a real key: the same answer, references and confidence,
+and the real token counts of that run, so the cost tracker shows real numbers. Nothing is charged.
+To add one, ask in **⚡ Live** mode and use **💾 Save this answer as a demo example**
+(see [`demo/examples/`](demo/examples/)).
+
+---
+
 ## 🚀 Quick start
 
 ```bash
@@ -136,6 +167,7 @@ python main.py -q "..." --max-laws 10 --save-report
 |---|---|
 | **💬 Ask EUR-Lex** | Chat, confidence scores, keyword analysis |
 | **📋 References** | Source cards with EUR-Lex links, JSON export |
+| **💶 Usage** | Spend per session, day, month and step; budget; prices; CSV export |
 | **🗄️ Cache Manager** | Browse cached laws and the PDF archive |
 
 <details>
@@ -164,7 +196,12 @@ LexTreeRAG/
 │   ├── clause_ranker.py        # Obligation signal scoring
 │   ├── doc_ingester.py         # Uploaded files → tree
 │   ├── query_classifier.py     # Question type + sub-questions
-│   └── gemini_search.py        # Optional Gemini layer
+│   ├── gemini_search.py        # Optional Gemini layer
+│   ├── costs.py                # Token counts → euros, model prices
+│   ├── metering.py             # Counts every model call, labelled by step
+│   ├── usage.py                # Usage ledger kept in the browser, budget
+│   └── demo.py                 # Record and replay demo answers
+├── demo/examples/              # Recorded answers for Demo mode
 ├── data/                       # Cache + PDF archive (gitignored)
 └── tests/                      # 200+ unit tests, no API key needed
 ```
@@ -176,7 +213,7 @@ pip install pytest
 pytest -q
 ```
 
-The tests run offline (no API calls) on every push with GitHub Actions. They cover article parsing, keyword and obligation-signal extraction, clause ranking, tree navigation and end-to-end retrieval scenarios on sample regulation text.
+The tests run offline (no API calls) on every push with GitHub Actions. They cover article parsing, keyword and obligation-signal extraction, clause ranking, tree navigation, end-to-end retrieval scenarios on sample regulation text, and the token counting and cost tracking.
 
 ---
 
