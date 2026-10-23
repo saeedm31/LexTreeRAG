@@ -128,6 +128,15 @@ To add one, ask in **⚡ Live** mode and use **💾 Save this answer as a demo e
 
 ---
 
+## ☁️ Deploy on AWS (branch `aws`)
+
+The [`aws`](https://github.com/saeedm31/LexTreeRAG/tree/aws) branch runs LexTreeRAG in your own AWS account, in the EU:
+Claude through **Amazon Bedrock** (no API key, Stockholm region), a shared law cache, spend and budgets per person
+and team, optional login with Amazon Cognito, and everything created by **Terraform** in one command.
+Step-by-step guide: [`docs/aws.md`](docs/aws.md).
+
+---
+
 ## 🚀 Quick start
 
 ```bash
