@@ -76,12 +76,18 @@ def _text_of(messages, system=None) -> str:
 
 
 class _Messages:
-    def __init__(self, inner, meter: Meter):
+    def __init__(self, inner, meter: Meter, model_map: dict | None = None):
         self._inner, self._meter = inner, meter
+        self._map = model_map or {}
+
+    def _api(self, kwargs: dict) -> dict:
+        """The same call with the provider's model ID (e.g. Bedrock); usage keeps the plain model name."""
+        model = kwargs.get("model")
+        return dict(kwargs, model=self._map[model]) if model in self._map else kwargs
 
     def create(self, **kwargs):
         step = current_step()
-        resp = self._inner.create(**kwargs)
+        resp = self._inner.create(**self._api(kwargs))
         u = from_anthropic(resp, kwargs.get("model", "?"), step)
         if u.estimated:
             u.input = estimate_tokens(_text_of(kwargs.get("messages"), kwargs.get("system")))
@@ -89,7 +95,7 @@ class _Messages:
         return resp
 
     def stream(self, **kwargs):
-        return _MeteredStream(self._inner.stream(**kwargs), kwargs, current_step(), self._meter)
+        return _MeteredStream(self._inner.stream(**self._api(kwargs)), kwargs, current_step(), self._meter)
 
     def __getattr__(self, name):
         return getattr(self._inner, name)
@@ -121,12 +127,13 @@ class _MeteredStream:
 
 
 class MeteredClient:
-    """Drop-in for `anthropic.Anthropic`: same calls, every one counted in `meter`."""
+    """Drop-in for `anthropic.Anthropic`: same calls, every one counted in `meter`.
+    `model_map` translates model names for another endpoint (e.g. Amazon Bedrock IDs)."""
 
-    def __init__(self, client, meter: Meter | None = None):
+    def __init__(self, client, meter: Meter | None = None, model_map: dict | None = None):
         self._client = client
         self.meter = meter or Meter()
-        self.messages = _Messages(client.messages, self.meter)
+        self.messages = _Messages(client.messages, self.meter, model_map)
 
     def __getattr__(self, name):
         return getattr(self._client, name)
