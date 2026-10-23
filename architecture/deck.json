@@ -1,0 +1,18 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-23T13:25:00Z"},
+  "lists": "css",
+  "title": "LexTreeRAG System Architecture",
+  "order": ["cover", "what", "bigpicture", "journey", "tree", "costs", "modes", "aws", "security", "deploy", "next", "close"],
+  "sections": {
+    "s1": {"description": "What the product does and how one question becomes a cited answer", "start": "cover"},
+    "s2": {"description": "How cost is tracked and the two ways the same code runs", "start": "costs"},
+    "s3": {"description": "The company setup on AWS: parts, security and shipping", "start": "aws"},
+    "s4": {"description": "What comes next for real company use", "start": "next"}
+  },
+  "faces": {
+    "space-grotesk": {"family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}

@@ -1,0 +1,47 @@
+<section id="bigpicture" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">The big picture</h2>
+<!-- U 0,270,260,160  APP 400,170,600,300  C 1264,0,400,180  E 1264,260,400,180  G 1264,520,400,180  K 400,560,280,140  L 720,560,280,140 -->
+<div style="position:relative;width:1664px;height:700px">
+<div style="position:absolute;left:0;top:270px;width:260px;height:160px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:30px;font-weight:600;line-height:1.2;color:#14213D">People</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Ask in a web page</p>
+</div>
+<div style="position:absolute;left:400px;top:170px;width:600px;height:300px;background:#14213D;border:2px solid #14213D;border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:34px;font-weight:600;line-height:1.2;color:#F7F5F0">LexTreeRAG app</h3>
+<ul style="font-size:26px;line-height:1.4;color:#D5DCE8">
+<li>Web page (Streamlit)</li>
+<li>Question pipeline: 7 steps</li>
+<li>Cost meter on every AI call</li>
+<li>Budget check before each answer</li>
+</ul>
+</div>
+<div style="position:absolute;left:1264px;top:0;width:400px;height:180px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:30px;font-weight:600;line-height:1.2;color:#14213D">Claude (AI)</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Anthropic API, or Amazon Bedrock on AWS</p>
+</div>
+<div style="position:absolute;left:1264px;top:260px;width:400px;height:180px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:30px;font-weight:600;line-height:1.2;color:#14213D">EUR-Lex</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Official EU law database. Free and live.</p>
+</div>
+<div style="position:absolute;left:1264px;top:520px;width:400px;height:180px;background:#FFFEFB;border:2px dashed #C9C3B6;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:30px;font-weight:600;line-height:1.2;color:#14213D">Gemini (optional)</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Second opinion. Off on AWS.</p>
+</div>
+<div style="position:absolute;left:400px;top:560px;width:280px;height:140px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Law cache</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Laws read once</p>
+</div>
+<div style="position:absolute;left:720px;top:560px;width:280px;height:140px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Usage log</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Spend and budgets</p>
+</div>
+<x-connector x1="260" y1="350" x2="400" y2="350" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1000" y1="230" x2="1264" y2="90" route="elbow" style="color:#2F5BB7;border-width:3px"></x-connector>
+<x-connector x1="1000" y1="350" x2="1264" y2="350" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1000" y1="410" x2="1264" y2="610" route="elbow" style="color:#8A94A6;border-width:3px;border-style:dashed"></x-connector>
+<x-connector x1="540" y1="470" x2="540" y2="560" head="both" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="860" y1="470" x2="860" y2="560" head="both" style="color:#5A6478;border-width:3px"></x-connector>
+<p style="position:absolute;left:272px;top:296px;width:120px;font-size:24px;color:#4A5568">asks</p>
+</div>
+<aside>One app sits in the middle. People type a question into a web page. The app runs a 7-step pipeline. It talks to three outside services: Claude, the AI that reads and writes; EUR-Lex, the official EU law database; and, only if switched on, Gemini for a second opinion. It keeps two things: a cache of laws it has already read, so each law is read only once, and a usage log of what every answer cost. Every AI call goes through a cost meter, and the app checks the budget before each answer.</aside>
+</section>

@@ -1,0 +1,57 @@
+<section id="journey" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:16px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">From question to answer, in 7 steps</h2>
+<!-- row1 top 0: S1 0  S2 432  S3 864  S4 1296 (w368 h270) ; row2 top 400: OUT 0  S7 432  S6 864  S5 1296 -->
+<div style="position:relative;width:1664px;height:700px">
+<div style="position:absolute;left:0;top:0;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 1 · AI (Haiku)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Sort the question</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">What kind of question is it? Splits multi-part ones.</p>
+</div>
+<div style="position:absolute;left:432px;top:0;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 2 · AI (Haiku)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Pick search words</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Legal terms, EU synonyms and the year.</p>
+</div>
+<div style="position:absolute;left:864px;top:0;width:368px;height:270px;background:#EFEDE7;border:2px solid #8A94A6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#4A5568">STEP 3 · NO AI</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Search EUR-Lex</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Live search of the official database. Prefers original laws.</p>
+</div>
+<div style="position:absolute;left:1296px;top:0;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 4 · AI (Haiku)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Index new laws</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Splits a new law into articles with summaries. Once, then cached.</p>
+</div>
+<div style="position:absolute;left:1296px;top:400px;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 5 · AI (Haiku)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Choose articles</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Reads only the table of contents. Scores each article 0–10.</p>
+</div>
+<div style="position:absolute;left:864px;top:400px;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 6 · AI (your pick)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Write the answer</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Claude Opus by default. Uses only the chosen articles.</p>
+</div>
+<div style="position:absolute;left:432px;top:400px;width:368px;height:270px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#2F5BB7">STEP 7 · AI (Haiku)</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Check the answer</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Does it cover the question? Does it stick to the law?</p>
+</div>
+<div style="position:absolute;left:0;top:400px;width:368px;height:270px;background:#FCEBDD;border:2px solid #B5541C;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;color:#B5541C">RESULT</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">The user gets</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">The answer, article links, a confidence score and its cost.</p>
+</div>
+<x-connector x1="368" y1="135" x2="432" y2="135" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="800" y1="135" x2="864" y2="135" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1232" y1="135" x2="1296" y2="135" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1480" y1="270" x2="1480" y2="400" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1296" y1="535" x2="1232" y2="535" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="864" y1="535" x2="800" y2="535" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="432" y1="535" x2="368" y2="535" style="color:#B5541C;border-width:3px"></x-connector>
+<x-connector x1="616" y1="400" x2="616" y2="270" style="color:#B5541C;border-width:3px;border-style:dashed"></x-connector>
+<p style="position:absolute;left:636px;top:301px;width:440px;font-size:24px;line-height:1.4;color:#B5541C">Low score? Search again, wider (up to 2 times).</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#4A5568">Blue boxes use AI (Claude). The grey box uses no AI. The orange box is what the user sees.</p>
+<aside>This is what happens to one question. Steps 1 and 2: a small, cheap AI model (Claude Haiku) works out what kind of question it is and picks good search words. Step 3: we search the official EU database. No AI here. Step 4: if a law is new to us, Haiku splits it into articles and writes a one-line summary of each. This happens once per law; after that it is cached. Step 5: Haiku reads only that table of contents and scores each article. Step 6: the big model, Claude Opus by default, writes the answer from the chosen articles only. Step 7: Haiku checks the answer. If the score is low, we search again with wider terms, up to two more times, and keep the best answer.</aside>
+</section>
