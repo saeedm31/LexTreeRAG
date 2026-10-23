@@ -28,7 +28,7 @@ load_dotenv()
 console = Console()
 
 
-# ── CLI args ────────────────────────────────────────────────────────────────────────────
+# ── CLI args ──────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ── Display helpers ────────────────────────────────────────────────────────────
+# ── Display helpers ───────────────────────────────────────────────────────────
 
 def print_banner() -> None:
     console.print(
@@ -110,7 +110,7 @@ def save_report(result: dict, question: str, out_dir: str = "./data") -> str:
     return path
 
 
-# ── Interactive REPL ───────────────────────────────────────────────────────────
+# ── Interactive REPL ──────────────────────────────────────────────────────────
 
 def repl(cache_dir: str, max_docs: int, client: anthropic.Anthropic) -> None:
     console.print(
@@ -175,7 +175,7 @@ def _ask(
         console.print(f"[green]Report saved → {path}[/green]")
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> None:
     args = parse_args()
