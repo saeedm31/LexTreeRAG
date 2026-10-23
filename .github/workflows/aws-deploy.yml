@@ -1,0 +1,42 @@
+name: Deploy to AWS
+
+# Builds the container, pushes it to Amazon ECR and rolls it out on ECS.
+# Runs only once the repository variables from docs/aws.md (step 5) are set.
+on:
+  workflow_dispatch:
+  push:
+    branches: [aws]
+    paths-ignore: ["infra/**", "docs/**", "**.md", "tests/**"]
+
+permissions:
+  id-token: write   # GitHub OIDC login to AWS, no stored keys
+  contents: read
+
+concurrency: deploy-aws
+
+jobs:
+  deploy:
+    if: vars.AWS_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the image
+        run: |
+          IMAGE=${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}
+          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
+          docker push --all-tags $IMAGE
+
+      - name: Roll out
+        run: |
+          aws ecs update-service --cluster ${{ vars.ECS_CLUSTER }} --service ${{ vars.ECS_SERVICE }} \
+            --force-new-deployment --query 'service.serviceName' --output text
+          aws ecs wait services-stable --cluster ${{ vars.ECS_CLUSTER }} --services ${{ vars.ECS_SERVICE }}
