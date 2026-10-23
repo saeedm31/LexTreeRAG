@@ -23,7 +23,7 @@ from pipeline.keyword_extractor import extract_keywords_and_year
 from pipeline.eurolex_client    import search_eurlex, fetch_document_markdown, \
                                        extract_cited_regulations, fetch_by_citation, \
                                        fetch_documents_parallel, follow_citation_links
-from pipeline.tree_builder      import build_tree
+from pipeline.tree_builder      import build_tree as _build_tree_raw, cache_path, save_tree
 from pipeline.tree_navigator    import navigate_tree
 from pipeline.gemini_search     import get_gemini_client, validate_gemini_key, \
                                        gemini_answer_stream, gemini_answer
@@ -36,6 +36,15 @@ from pipeline.clause_ranker     import (
     rerank_nodes, has_answer_signal, obligation_expansion_keywords
 )
 from pipeline.pdf_archive       import scan_inbox, list_archived
+from pipeline                   import costs, demo
+from pipeline                   import usage as usage_ledger
+from pipeline.metering          import Meter, MeteredClient, MeteredGemini, ONE_TIME_STEPS
+
+import streamlit.components.v1 as components
+try:
+    import streamlit.components.v2 as components_v2     # two-way components (Streamlit 1.51+)
+except ImportError:
+    components_v2 = None
 
 load_dotenv()
 
@@ -86,12 +95,27 @@ def _init():
         "discovery_mode":      False,  # keyword discovery UI active
         "discovery_suggested": [],     # suggested keywords from last low-confidence answer
         "retry_count":         0,      # number of retries for last query
+        # ── cost tracking ──
+        "meter":               None,   # every model call of this session (pipeline.metering.Meter)
+        "answer_model":        "claude-opus-4-6",
+        "fx":                  costs.USD_TO_EUR,
+        "prices":              dict(costs.PRICES),
+        "cache_saved_run":     0.0,    # euros the law cache saved during the current question
+        "session_log":         [],     # one row per model call, for the Usage tab and CSV
+        "last_record":         None,   # last live answer, ready to save as a demo example
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
 _init()
+if st.session_state.meter is None:
+    st.session_state.meter = Meter()
+_today = datetime.now().date()
+if "ledger" not in st.session_state:
+    st.session_state.ledger        = usage_ledger.empty(_today)
+    st.session_state.ledger_loaded = False
+    st.session_state.ledger_saved  = None
 
 CACHE_DIR = os.getenv("CACHE_DIR", "./data/cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -136,7 +160,7 @@ def _get_client(api_key: str) -> anthropic.Anthropic | None:
         c = anthropic.Anthropic(api_key=api_key)
         # Quick ping to validate key
         c.models.list()
-        return c
+        return MeteredClient(c, st.session_state.meter)   # same client, every call's tokens counted
     except Exception:
         return None
 
@@ -318,8 +342,19 @@ def _paragraph_limit_rule(max_paragraphs: int) -> str:
     )
 
 
+def _answer_kwargs(system: str, prompt: str, model: str | None) -> dict:
+    """Model call settings for the answer; thinking only where the chosen model supports it."""
+    model = model or st.session_state.answer_model
+    kw = dict(model=model, max_tokens=4096, system=system,
+              messages=[{"role": "user", "content": prompt}])
+    thinking = costs.thinking_for(model)
+    if thinking:
+        kw["thinking"] = thinking
+    return kw
+
+
 def answer_stream(question: str, selected: list[dict], client,
-                  max_paragraphs: int | None = None):
+                  max_paragraphs: int | None = None, model: str | None = None):
     """Generator: yields text tokens from Claude Opus streaming (prose mode)."""
     context = _build_context(selected)
     prompt  = (
@@ -331,19 +366,13 @@ def answer_stream(question: str, selected: list[dict], client,
     if max_paragraphs is not None:
         system = system + _paragraph_limit_rule(max_paragraphs)
 
-    with client.messages.stream(
-        model      = "claude-opus-4-6",
-        max_tokens = 4096,
-        thinking   = {"type": "adaptive"},
-        system     = system,
-        messages   = [{"role": "user", "content": prompt}],
-    ) as stream:
+    with client.messages.stream(**_answer_kwargs(system, prompt, model)) as stream:
         for text in stream.text_stream:
             yield text
 
 
 def answer_structured(question: str, selected: list[dict], client,
-                      max_paragraphs: int | None = None) -> tuple[dict, str]:
+                      max_paragraphs: int | None = None, model: str | None = None) -> tuple[dict, str]:
     """
     Non-streaming structured answer (JSON mode).
     Returns (parsed_dict, raw_json_string).
@@ -364,13 +393,7 @@ def answer_structured(question: str, selected: list[dict], client,
             f"exceptions, procedure) must have at most {max_paragraphs} item(s) total. "
             f"Prioritise the most critical legal information."
         )
-    resp = client.messages.create(
-        model      = "claude-opus-4-6",
-        max_tokens = 4096,
-        thinking   = {"type": "adaptive"},
-        system     = system,
-        messages   = [{"role": "user", "content": prompt}],
-    )
+    resp = client.messages.create(**_answer_kwargs(system, prompt, model))
     raw = resp.content[-1].text.strip()
     raw = _re.sub(r"^```(?:json)?\s*", "", raw)
     raw = _re.sub(r"\s*```$",          "", raw)
@@ -381,7 +404,7 @@ def answer_structured(question: str, selected: list[dict], client,
 
 
 def answer_prose(question: str, selected: list[dict], client,
-                 max_paragraphs: int | None = None) -> str:
+                 max_paragraphs: int | None = None, model: str | None = None) -> str:
     """Non-streaming prose answer (used for silent retry attempts)."""
     context = _build_context(selected)
     prompt  = (
@@ -392,13 +415,7 @@ def answer_prose(question: str, selected: list[dict], client,
     system = _ANSWER_SYSTEM
     if max_paragraphs is not None:
         system = system + _paragraph_limit_rule(max_paragraphs)
-    resp = client.messages.create(
-        model      = "claude-opus-4-6",
-        max_tokens = 4096,
-        thinking   = {"type": "adaptive"},
-        system     = system,
-        messages   = [{"role": "user", "content": prompt}],
-    )
+    resp = client.messages.create(**_answer_kwargs(system, prompt, model))
     return resp.content[-1].text.strip()
 
 
@@ -629,6 +646,28 @@ def _render_keyword_discovery(
         "Add more specific terms above and re-run to improve coverage."
     )
     st.divider()
+
+
+# ── Law index with cost accounting ─────────────────────────────────────────────
+def build_tree(**kwargs) -> dict:
+    """tree_builder.build_tree, plus: what indexing a new law cost is stored with it, and when a law
+    comes from the cache, what that saved is added to the current question's savings."""
+    meter = st.session_state.meter
+    mark  = meter.mark()
+    tree  = _build_tree_raw(**kwargs)
+    new   = [u for u in meter.since(mark) if u.step in ONE_TIME_STEPS]
+    if new:
+        if not tree.get("index_usage"):
+            tree["index_usage"] = [u.to_dict() for u in new]
+            try:
+                save_tree(tree, cache_path(kwargs["cache_dir"], tree.get("year", 0), tree["doc_id"]))
+            except Exception:
+                pass
+    else:
+        saved = costs.total(costs.index_usage_estimate(tree), st.session_state.prices,
+                            st.session_state.fx)["eur"]
+        st.session_state.cache_saved_run += saved or 0.0
+    return tree
 
 
 # ── Pipeline runner ────────────────────────────────────────────────────────────
@@ -981,6 +1020,96 @@ def run_query(
     }
 
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  COST TRACKING HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+_TH = "text-align:left;padding:4px 8px;border-bottom:1px solid #ddd"
+_TD = "padding:3px 8px;border-bottom:1px solid #eee"
+
+
+def _html_table(columns: list[str], rows: list[dict], raw: tuple = ("",)) -> str:
+    """Plain HTML table (st.dataframe crashes on Python 3.9 with older numpy, see CLAUDE.md).
+    Cell text is escaped, except columns named in `raw` (used for the small bar graphics)."""
+    import html as _h
+    out = "<table style='width:100%;font-size:0.85em;border-collapse:collapse'><tr>"
+    out += "".join(f"<th style='{_TH}'>{_h.escape(c)}</th>" for c in columns) + "</tr>"
+    for r in rows:
+        out += "<tr>" + "".join(
+            f"<td style='{_TD}'>{r.get(c, '') if c in raw else _h.escape(str(r.get(c, '')))}</td>"
+            for c in columns) + "</tr>"
+    return out + "</table>"
+
+
+def _cost_line(calls: list, saved: float = 0.0, replay_of: str | None = None) -> str:
+    t = costs.total(calls, st.session_state.prices, st.session_state.fx)
+    tin = t["input"] + t["cache_read"] + t["cache_write"]
+    line = (f"💶 {t['calls']} model call{'s' if t['calls'] != 1 else ''} · {tin:,} tokens in"
+            + (f" ({t['cache_read']:,} from prompt cache)" if t["cache_read"] else "")
+            + f", {t['output']:,} out · ≈ **{costs.eur(t['eur'])}**"
+            + (" (partly estimated)" if t["estimated"] else ""))
+    if saved:
+        line += f" · law cache saved ≈ {costs.eur(saved)}"
+    if replay_of:
+        line += f" · recorded {replay_of}, replayed now at no cost"
+    return line
+
+
+def _render_cost(cost: dict) -> None:
+    """Cost line under an answer, with a per-step breakdown."""
+    calls = [costs.Usage.from_dict(d) for d in cost.get("calls", [])]
+    if not calls:
+        return
+    st.caption(_cost_line(calls, cost.get("saved", 0.0), cost.get("replay_of")))
+    with st.expander("Where the money went", expanded=False):
+        steps = costs.by_step(calls, st.session_state.prices, st.session_state.fx)
+        whole = sum(r["eur"] or 0 for r in steps) or 1
+        rows = [{"Step": r["step"] + (" (one-time per law)" if r["step"] in ONE_TIME_STEPS else ""),
+                 "Model": ", ".join(r["models"]), "Calls": r["calls"],
+                 "Tokens in": f"{r['input'] + r['cache_read'] + r['cache_write']:,}",
+                 "Tokens out": f"{r['output']:,}", "€": costs.eur(r["eur"]),
+                 "Share": f"{100 * (r['eur'] or 0) / whole:.0f}%"} for r in steps]
+        st.markdown(_html_table(["Step", "Model", "Calls", "Tokens in", "Tokens out", "€", "Share"], rows),
+                    unsafe_allow_html=True)
+        st.caption("Token counts come from the provider's reply; thinking tokens are part of tokens out. "
+                   "Euros are an estimate from list prices (see 💶 Usage).")
+
+
+def _account(question: str, mark: int, prefix: str = "") -> dict:
+    """Add everything the model calls since `mark` cost to the ledger and the session log."""
+    calls = st.session_state.meter.since(mark)
+    saved = st.session_state.cache_saved_run
+    st.session_state.cache_saved_run = 0.0
+    if calls or saved:
+        usage_ledger.record(st.session_state.ledger, calls, question, _today,
+                            st.session_state.prices, st.session_state.fx, saved=saved, prefix=prefix)
+    now = datetime.now().strftime("%H:%M:%S")
+    for u in calls:
+        st.session_state.session_log.append({
+            "time": now, "question": question[:80], "step": u.step, "model": prefix + u.model,
+            "tokens in": u.input + u.cache_write, "from cache": u.cache_read, "tokens out": u.output,
+            "eur": costs.cost_eur(u, st.session_state.prices, st.session_state.fx), "estimated": u.estimated})
+    return {"calls": [u.to_dict() for u in calls], "saved": saved}
+
+
+def _budget_reached() -> bool:
+    """Monthly budget reached: AI answers stop until next month, a higher budget or a reset."""
+    b = usage_ledger.status(st.session_state.ledger, _today)
+    if b["level"] == "over":
+        st.error(f"Monthly AI budget reached ({costs.eur(b['spent'])} of {costs.eur(b['budget'])}). "
+                 "AI answers are paused until next month. Raise the budget or reset the counter in 💶 Usage.")
+        return True
+    return False
+
+
+def _confidence_line(conf: dict | None) -> str:
+    if not conf:
+        return ""
+    icon = {"high": "🟢", "medium": "🟡", "low": "🔴"}.get(conf.get("level"), "")
+    return (f"{icon} Confidence {conf.get('score')}% · coverage {conf.get('coverage')}% · "
+            f"grounding {conf.get('grounding')}%")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -989,15 +1118,32 @@ with st.sidebar:
     st.caption("Vectorless Legal RAG via Article Trees · Live EUR-Lex")
     st.divider()
 
+    # ── Mode: recorded demo answers (no key) or live with your key ────────────
+    _examples = demo.load_all()
+    _has_env_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+    app_mode = st.radio(
+        "Mode",
+        ["▶️ Demo (recorded answers, no key)", "⚡ Live (your API key)"],
+        index=1 if (_has_env_key or st.session_state.api_key_ok or not _examples) else 0,
+        help="**Demo** replays real answers recorded earlier, with their real token counts and cost. "
+             "Nothing is charged. **Live** searches EUR-Lex now and calls Claude with your key.",
+    )
+    demo_mode = app_mode.startswith("▶️")
+    if demo_mode:
+        st.caption(f"{len(_examples)} recorded question(s). Pick one in the chat tab.")
+        api_key, gemini_key = "", ""
+
     # API key
-    api_key = st.text_input(
+    api_key = api_key if demo_mode else st.text_input(
         "Anthropic API Key",
         value=os.getenv("ANTHROPIC_API_KEY", ""),
         type="password",
         placeholder="sk-ant-…",
         help="Set in .env to avoid entering it every time.",
     )
-    if api_key and not st.session_state.api_key_ok:
+    if demo_mode:
+        pass
+    elif api_key and not st.session_state.api_key_ok:
         with st.spinner("Validating key…"):
             c = _get_client(api_key)
         if c:
@@ -1011,9 +1157,36 @@ with st.sidebar:
 
     st.divider()
 
+    # ── Answer model + spend ──────────────────────────────────────────────────
+    st.markdown("**✍️ Answer written by**")
+    _models = list(costs.ANSWER_MODELS)
+    st.session_state.answer_model = st.selectbox(
+        "Answer model", _models, index=_models.index(st.session_state.answer_model),
+        format_func=lambda m: costs.ANSWER_MODELS[m], label_visibility="collapsed",
+        help="The model that writes the final answer. The small steps (sorting the question, search "
+             "words, choosing articles, checking the answer) always use Claude Haiku 4.5.",
+    )
+    _avg = usage_ledger.avg_cost_per_question(st.session_state.ledger)
+    _preview = costs.total(costs.typical_question(st.session_state.answer_model),
+                           st.session_state.prices, st.session_state.fx)["eur"]
+    st.caption(f"About **{costs.eur(_preview)}** per question with laws already indexed (rough estimate). "
+               "Each new law adds a one-time indexing cost."
+               + (f" Your average so far: **{costs.eur(_avg)}**." if _avg else ""))
+
+    _b = usage_ledger.status(st.session_state.ledger, _today)
+    st.markdown("**💶 AI spend**")
+    st.progress(min(_b["share"], 1.0),
+                text=f"{costs.eur(_b['spent'])} of {costs.eur(_b['budget'])} this month")
+    if _b["level"] == "over":
+        st.error("Monthly budget reached: AI answers are paused. See 💶 Usage.")
+    elif _b["level"] == "warn":
+        st.warning(f"{_b['share']:.0%} of this month's AI budget is used.")
+
+    st.divider()
+
     # ── Optional Gemini key ───────────────────────────────────────────────────
     st.markdown("**🔮 Gemini (optional — hybrid mode)**")
-    gemini_key = st.text_input(
+    gemini_key = gemini_key if demo_mode else st.text_input(
         "Google Gemini API Key",
         value=os.getenv("GEMINI_API_KEY", ""),
         type="password",
@@ -1021,11 +1194,14 @@ with st.sidebar:
         help="Optional. When set, a second answer using Gemini + Google Search "
              "appears alongside the EUR-Lex answer.",
     )
-    if gemini_key and not st.session_state.gemini_key_ok:
+    if demo_mode:
+        st.caption("_Not used in demo mode_")
+    elif gemini_key and not st.session_state.gemini_key_ok:
         with st.spinner("Validating Gemini key…"):
             ok, model_or_err = validate_gemini_key(gemini_key)
         if ok:
-            st.session_state.gemini_client = get_gemini_client(gemini_key)
+            _gc = get_gemini_client(gemini_key)
+            st.session_state.gemini_client = MeteredGemini(_gc, st.session_state.meter) if _gc else None
             st.session_state.gemini_key_ok = True
             st.session_state.gemini_model  = model_or_err
             st.success(f"Hybrid mode ON ✓ · `{model_or_err}`", icon="🔮")
@@ -1201,8 +1377,8 @@ with st.sidebar:
 # ═══════════════════════════════════════════════════════════════════════════════
 #  MAIN TABS
 # ═══════════════════════════════════════════════════════════════════════════════
-tab_ask, tab_refs, tab_cache = st.tabs(
-    ["💬 Ask EUR-Lex", "📋 References", "🗄️ Cache Manager"]
+tab_ask, tab_refs, tab_usage, tab_cache = st.tabs(
+    ["💬 Ask EUR-Lex", "📋 References", "💶 Usage", "🗄️ Cache Manager"]
 )
 
 # ── Tab 1: Chat ────────────────────────────────────────────────────────────────
@@ -1230,6 +1406,25 @@ with tab_ask:
                 if q_type:
                     parts.append(f"Type: `{q_type}`")
                 st.caption(" · ".join(parts))
+            if msg["role"] == "assistant" and msg.get("confidence"):
+                st.caption(_confidence_line(msg["confidence"]))
+            if msg["role"] == "assistant" and msg.get("cost"):
+                _render_cost(msg["cost"])
+
+    # ── Save the last live answer as a demo example ───────────────────────────
+    if st.session_state.last_record and not demo_mode:
+        _rec = st.session_state.last_record
+        with st.expander("💾 Save this answer as a demo example", expanded=False):
+            st.caption("Visitors without a key can replay it in Demo mode, with this run's real token counts. "
+                       "The file holds the question, answer, references, confidence and token counts — never "
+                       "your API key. Add it to `demo/examples/` in the repository.")
+            _c1, _c2 = st.columns(2)
+            _c1.download_button("⬇️ Download (JSON)", json.dumps(_rec, ensure_ascii=False, indent=1),
+                                file_name=demo.file_name(_rec), mime="application/json",
+                                use_container_width=True)
+            if _c2.button("💾 Save to demo/examples/", use_container_width=True,
+                          help="Works when the app runs on your computer."):
+                st.success(f"Saved: `{demo.save(_rec)}`")
 
     # ── Keyword stats panel (persistent — updates after each query) ──────────
     if st.session_state.kw_stats and not st.session_state.get("focus_rerun_q"):
@@ -1333,15 +1528,72 @@ with tab_ask:
                  "and save your free-tier quota.",
         )
 
+    # ── Demo mode: recorded questions ─────────────────────────────────────────
+    demo_pick = None
+    if demo_mode:
+        if not _examples:
+            st.info("No recorded answers yet. Switch to **Live**, ask with your key, then use "
+                    "**💾 Save this answer as a demo example**.")
+        else:
+            st.markdown("**Try a recorded question** (real answers, replayed at no cost)")
+            _cols = st.columns(min(3, len(_examples)))
+            for _i, _ex in enumerate(_examples):
+                if _cols[_i % len(_cols)].button(_ex["question"], key=f"demo_{_i}", use_container_width=True):
+                    demo_pick = _ex
+
     # Chat input
     user_q = st.chat_input(
-        "e.g. What are the mandatory targets for EV charging infrastructure in 2023?"
+        "Demo mode: pick a recorded question above, or switch to Live to ask your own"
+        if demo_mode else
+        "e.g. What are the mandatory targets for EV charging infrastructure in 2023?",
+        disabled=demo_mode,
     )
+
+    if demo_pick:
+        # ── Replay a recorded answer ──────────────────────────────────────────
+        _rec = demo_pick
+        st.session_state.history.append({"role": "user", "content": _rec["question"]})
+        with st.chat_message("user"):
+            st.markdown(_rec["question"])
+        with st.chat_message("assistant"):
+            _ph, _shown = st.empty(), ""
+            for _piece in demo.chunks(_rec["answer"]):
+                _shown += _piece
+                _ph.markdown(_shown + "▌")
+                time.sleep(0.008)
+            _ph.markdown(_rec["answer"])
+        _calls = demo.calls_of(_rec)
+        _when  = _rec.get("recorded_at", "")[:10]
+        usage_ledger.record(st.session_state.ledger, _calls, _rec["question"], _today,
+                            st.session_state.prices, st.session_state.fx,
+                            saved=_rec.get("saved_eur", 0.0), prefix="replay · ")
+        st.session_state.ledger["free"] = st.session_state.ledger.get("free", 0) + 1
+        _now = datetime.now().strftime("%H:%M:%S")
+        for _u in _calls:
+            st.session_state.session_log.append({
+                "time": _now, "question": _rec["question"][:80], "step": _u.step,
+                "model": "replay · " + _u.model, "tokens in": _u.input + _u.cache_write,
+                "from cache": _u.cache_read, "tokens out": _u.output,
+                "eur": costs.cost_eur(_u, st.session_state.prices, st.session_state.fx),
+                "estimated": _u.estimated})
+        st.session_state.history.append({
+            "role": "assistant", "content": _rec["answer"], "references": _rec.get("references", []),
+            "meta": _rec.get("meta", {}), "confidence": _rec.get("confidence"),
+            "cost": {"calls": _rec["calls"], "saved": _rec.get("saved_eur", 0.0), "replay_of": _when},
+        })
+        st.session_state.references    = _rec.get("references", [])
+        st.session_state.kw_stats      = _rec.get("meta", {}).get("kw_stats") or []
+        st.session_state.kw_docs_found = _rec.get("meta", {}).get("docs_found", 0)
+        st.rerun()
 
     if user_q:
         if not st.session_state.client:
             st.error("Please enter a valid Anthropic API key in the sidebar.")
             st.stop()
+        if _budget_reached():
+            st.stop()
+        _q_mark = st.session_state.meter.mark()
+        st.session_state.cache_saved_run = 0.0
 
         # Show user message
         st.session_state.history.append({"role": "user", "content": user_q})
@@ -1383,7 +1635,7 @@ with tab_ask:
                 st.warning(result["answer"])
                 st.session_state.history.append(
                     {"role": "assistant", "content": result["answer"],
-                     "meta": result}
+                     "meta": result, "cost": _account(user_q, _q_mark)}
                 )
                 # Persist keyword stats so the panel appears after rerun.
                 # The panel is rendered BEFORE this block executes, so we must
@@ -1412,6 +1664,7 @@ with tab_ask:
                         if hybrid else ""
                     )
                     full_answer = ""
+                    structured_data = None
                     claude_placeholder = st.empty()
 
                     if st.session_state.structured_mode:
@@ -1591,9 +1844,20 @@ with tab_ask:
                         f"\n\n---\n\n**🔮 Gemini (Web):**\n\n{gemini_text}"
                     )
 
+                _cost = _account(user_q, _q_mark)
                 st.session_state.history.append(
                     {"role": "assistant", "content": history_content,
-                     "references": result["references"], "meta": result}
+                     "references": result["references"], "meta": result,
+                     "confidence": confidence, "cost": _cost}
+                )
+                st.session_state.last_record = demo.make_record(
+                    question=user_q, answer=history_content, references=result["references"],
+                    confidence=confidence, meta=result,
+                    calls=[costs.Usage.from_dict(d) for d in _cost["calls"]], saved_eur=_cost["saved"],
+                    answer_model=st.session_state.answer_model,
+                    structured=structured_data if st.session_state.structured_mode else None,
+                    settings={"max_laws": int(max_laws), "sectors": list(selected_sectors),
+                              "source_mode": source_mode, "gemini": bool(hybrid and gemini_text)},
                 )
                 st.session_state.references  = result["references"]
                 st.session_state.kw_stats    = result.get("kw_stats", [])
@@ -1613,7 +1877,11 @@ with tab_ask:
 
         if not st.session_state.client:
             st.error("A valid API key is required for focused re-runs.")
+        elif _budget_reached():
+            pass
         else:
+            _f_mark = st.session_state.meter.mark()
+            st.session_state.cache_saved_run = 0.0
             _label = (
                 f"🎯 Re-run — focus on: "
                 + ", ".join(f"**{k}**" for k in _focus_kws)
@@ -1672,6 +1940,7 @@ with tab_ask:
                 "content":    _fa_text,
                 "references": _fr.get("references", []),
                 "meta":       _fr,
+                "cost":       _account(_focus_q, _f_mark),
             })
 
 
@@ -1720,7 +1989,131 @@ with tab_refs:
         )
 
 
-# ── Tab 3: Cache Manager ───────────────────────────────────────────────────────
+# ── Tab 3: Usage and cost ──────────────────────────────────────────────────────
+with tab_usage:
+    import csv as _csv
+    import io as _io
+
+    st.markdown("### 💶 What the AI answers cost")
+    st.caption("Token counts come from the provider's reply. Euros are an estimate: list price per million "
+               "tokens × tokens × the USD→EUR rate below; your provider's bill is the real number. The counter "
+               "is kept in this browser only (local storage). Your API key is never stored.")
+    _led   = st.session_state.ledger
+    _log   = st.session_state.session_log
+    _s_eur = sum(r["eur"] or 0 for r in _log)
+    _s_q   = len({(r["time"], r["question"]) for r in _log})
+    _day, _month = usage_ledger.day_row(_led, _today), usage_ledger.month_row(_led, _today)
+    _m1, _m2, _m3, _m4, _m5 = st.columns(5)
+    _m1.metric("This session", costs.eur(_s_eur), f"{_s_q} question{'s' if _s_q != 1 else ''}", delta_color="off")
+    _m2.metric("Today", costs.eur(_day[5]), f"{_day[0]} calls · {sum(_day[1:5]):,} tokens", delta_color="off")
+    _m3.metric("This month", costs.eur(_month[5]), f"{_month[0]} calls · {sum(_month[1:5]):,} tokens",
+               delta_color="off")
+    _m4.metric(f"Since {_led['since'][8:10]}/{_led['since'][5:7]}", costs.eur(_led["all"][5]),
+               f"{_led.get('asked', 0)} question{'s' if _led.get('asked', 0) != 1 else ''}", delta_color="off")
+    _m5.metric("Saved by the law cache", costs.eur(_led.get("saved", 0.0)),
+               "laws indexed once, reused", delta_color="off",
+               help="Each law is indexed once (Haiku writes a one-line summary per article). When a later "
+                    "question needs the same law, it comes from the cache and that cost is not paid again.")
+
+    _bs = usage_ledger.status(_led, _today)
+    st.progress(min(_bs["share"], 1.0), text=f"Monthly budget: {costs.eur(_bs['spent'])} of "
+                                              f"{costs.eur(_bs['budget'])} ({_bs['share']:.0%})")
+    if _bs["level"] == "over":
+        st.error("Budget reached: AI answers are paused until next month, a higher budget or a reset.")
+    elif _bs["level"] == "warn":
+        st.warning("Over 80% of the monthly budget is used.")
+    if _led.get("free"):
+        st.caption(f"▶️ {_led['free']} demo replay(s) are included as if they were paid (marked *replay*); "
+                   "nothing was charged for them.")
+
+    _left, _right = st.columns(2)
+    with _left:
+        st.markdown("**Where the money goes, by step** (since the last reset)")
+        _steps = sorted(_led.get("steps", {}).items(), key=lambda kv: -kv[1][5])
+        _whole = sum(r[5] for _, r in _steps) or 1
+        if _steps:
+            st.markdown(_html_table(["Step", "Calls", "Tokens in", "Tokens out", "€", "Share"], [
+                {"Step": k + (" (one-time)" if k in ONE_TIME_STEPS else ""), "Calls": r[0],
+                 "Tokens in": f"{r[1] + r[3] + r[4]:,}", "Tokens out": f"{r[2]:,}", "€": costs.eur(r[5]),
+                 "Share": f"{100 * r[5] / _whole:.0f}%"} for k, r in _steps]), unsafe_allow_html=True)
+        else:
+            st.caption("Nothing yet. Ask a question (or replay one in Demo mode).")
+        st.markdown("**Spend per day this month**")
+        _days = sorted(_led["days"].items())
+        _peak = max((r[5] for _, r in _days), default=0) or 1
+        if _days:
+            st.markdown(_html_table(["Day", "Calls", "€", ""], [
+                {"Day": f"{d}/{_led['month'][5:7]}", "Calls": r[0], "€": costs.eur(r[5]),
+                 "": f"<div style='background:#4a9eff;height:10px;border-radius:3px;"
+                     f"width:{max(2, round(100 * r[5] / _peak))}%'></div>"} for d, r in _days]),
+                unsafe_allow_html=True)
+        else:
+            st.caption("No AI calls this month yet.")
+        if _led.get("prev"):
+            st.caption(f"Last month ({_led['prev']['month']}): {costs.eur(_led['prev']['eur'])}")
+    with _right:
+        st.markdown("**By model**")
+        if _led["models"]:
+            st.markdown(_html_table(["Model", "Calls", "Tokens in", "From cache", "Tokens out", "€"], [
+                {"Model": m, "Calls": r[0], "Tokens in": f"{r[1] + r[3] + r[4]:,}", "From cache": f"{r[3]:,}",
+                 "Tokens out": f"{r[2]:,}", "€": costs.eur(r[5])}
+                for m, r in sorted(_led["models"].items(), key=lambda kv: -kv[1][5])]), unsafe_allow_html=True)
+        else:
+            st.caption("Nothing yet.")
+        if _led["top"]:
+            st.markdown("**Most expensive questions**")
+            st.markdown(_html_table(["€", "Question"], [{"€": costs.eur(e), "Question": q} for e, q in _led["top"]]),
+                        unsafe_allow_html=True)
+
+    st.markdown("**This session, call by call**")
+    if _log:
+        _cols = ["time", "question", "step", "model", "tokens in", "from cache", "tokens out", "eur"]
+        st.markdown(_html_table(_cols, [{**r, "eur": costs.eur(r["eur"]),
+                                         "model": r["model"] + (" (est.)" if r["estimated"] else "")}
+                                        for r in _log[-60:]]), unsafe_allow_html=True)
+        _buf = _io.StringIO()
+        _w = _csv.DictWriter(_buf, fieldnames=_cols + ["estimated"])
+        _w.writeheader()
+        _w.writerows(_log)
+        st.download_button("⬇️ Download as CSV", _buf.getvalue(), "lextreerag_usage.csv", "text/csv")
+    else:
+        st.caption("No model calls in this session yet.")
+
+    with st.expander("⚙️ Budget, prices and reset"):
+        _nb = st.number_input("Monthly budget (€)", min_value=0.0, value=float(_led["budget"]), step=0.5,
+                              help="At 80% you get a warning. At 100% AI answers stop until next month, "
+                                   "a higher budget or a reset. 0 means no limit.")
+        if _nb != _led["budget"]:
+            _led["budget"] = _nb
+            st.rerun()
+        st.session_state.fx = st.number_input("1 US dollar in euros", min_value=0.1, max_value=5.0,
+                                              value=float(st.session_state.fx), step=0.01,
+                                              help="Default: the rate on 21 Oct 2026.")
+        st.caption(f"Prices in US dollars per million tokens (input · cache write · cache read · output), from "
+                   f"the providers' price pages on {costs.PRICES_CHECKED}. Gemini's Google Search grounding "
+                   "is billed per request on top (5,000 free a month on Gemini 3) and is not included.")
+        st.markdown(_html_table(["Model", "Input", "Cache write", "Cache read", "Output"], [
+            {"Model": m, "Input": p[0], "Cache write": p[1], "Cache read": p[2], "Output": p[3]}
+            for m, p in st.session_state.prices.items()]), unsafe_allow_html=True)
+        _pm = st.selectbox("Edit or add a model's price", list(st.session_state.prices) + ["(new model)"])
+        _pname = st.text_input("Model name", value="" if _pm == "(new model)" else _pm)
+        _old = st.session_state.prices.get(_pname, (0.0, 0.0, 0.0, 0.0))
+        _pc = st.columns(4)
+        _new = tuple(_pc[i].number_input(lbl, min_value=0.0, value=float(_old[i]), step=0.01, format="%.3f",
+                                         key=f"price_{i}_{_pname}")
+                     for i, lbl in enumerate(["Input", "Cache write", "Cache read", "Output"]))
+        if st.button("Save price") and _pname.strip():
+            st.session_state.prices[_pname.strip()] = _new
+            st.rerun()
+        st.divider()
+        _sure = st.checkbox("Yes, clear all saved usage in this browser")
+        if st.button("Reset the counter", disabled=not _sure):
+            st.session_state.ledger = usage_ledger.empty(_today, budget=_led["budget"])
+            st.session_state.session_log = []
+            st.rerun()
+
+
+# ── Tab 4: Cache Manager ───────────────────────────────────────────────────────
 with tab_cache:
     st.markdown("### 🗄️ Cached Reasoning Trees")
     st.caption(
@@ -1860,3 +2253,38 @@ with tab_cache:
             ) + "</tr>"
         _a_html += "</table>"
         st.markdown(_a_html, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  KEEP THE USAGE LEDGER IN THIS BROWSER
+# ═══════════════════════════════════════════════════════════════════════════════
+# Streamlit Community Cloud drops custom cookies, so the ledger lives in localStorage. A tiny two-way
+# component reads it once per visit; a one-way snippet writes it back whenever it changes.
+_READ_LEDGER = """
+export default function(component) {
+    let saved = "";
+    try { saved = window.localStorage.getItem("%s") || ""; } catch (e) {}
+    component.setStateValue("stored", saved);
+}
+""" % usage_ledger.STORAGE_KEY
+
+if not st.session_state.ledger_loaded:
+    try:
+        _reader = components_v2.component("lextree_usage_reader", js=_READ_LEDGER)
+        _stored = _reader(key="lextree_usage_reader", default={"stored": None},
+                          on_stored_change=lambda: None).stored
+    except Exception:          # no browser (tests) or an older Streamlit: the ledger lasts for this session
+        _stored = None
+    if _stored is not None:
+        _before = st.session_state.ledger       # anything counted before loading is kept
+        st.session_state.ledger = (usage_ledger.merge(usage_ledger.decode(_stored, _today), _before, _today)
+                                   if _stored else _before)
+        st.session_state.ledger_loaded = True
+        st.session_state.ledger_saved  = _stored
+        st.rerun()
+else:
+    _enc = usage_ledger.encode(st.session_state.ledger)
+    if _enc != st.session_state.ledger_saved:
+        components.html("<script>try { localStorage.setItem('" + usage_ledger.STORAGE_KEY + "', '" + _enc
+                        + "'); } catch (e) {}</script>", height=0)
+        st.session_state.ledger_saved = _enc
