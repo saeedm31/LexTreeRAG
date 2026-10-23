@@ -41,6 +41,7 @@ nav:
     - Chat — Ask EUR-Lex: chat.md
     - References Tab: references.md
     - Cache Manager: cache-manager.md
+    - Usage and Cost: usage.md
   - Technical Reference:
     - Pipeline Architecture: pipeline.md
 

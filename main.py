@@ -21,12 +21,14 @@ from rich         import box
 import anthropic
 
 from pipeline.rag_engine import run_pipeline
+from pipeline import costs
+from pipeline.metering import MeteredClient
 
 load_dotenv()
 console = Console()
 
 
-# ── CLI args ──────────────────────────────────────────────────────────────────
+# ── CLI args ────────────────────────────────────────────────────────────────────────────
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -58,7 +60,7 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ── Display helpers ───────────────────────────────────────────────────────────
+# ── Display helpers ────────────────────────────────────────────────────────────
 
 def print_banner() -> None:
     console.print(
@@ -108,7 +110,7 @@ def save_report(result: dict, question: str, out_dir: str = "./data") -> str:
     return path
 
 
-# ── Interactive REPL ──────────────────────────────────────────────────────────
+# ── Interactive REPL ───────────────────────────────────────────────────────────
 
 def repl(cache_dir: str, max_docs: int, client: anthropic.Anthropic) -> None:
     console.print(
@@ -138,6 +140,7 @@ def _ask(
     client: anthropic.Anthropic,
     save: bool = False,
 ) -> None:
+    mark = client.meter.mark() if hasattr(client, "meter") else 0
     result = run_pipeline(
         question  = question,
         cache_dir = cache_dir,
@@ -157,12 +160,22 @@ def _ask(
         f"| Keywords: {result['keywords']}[/dim]"
     )
 
+    if hasattr(client, "meter"):
+        calls = client.meter.since(mark)
+        t = costs.total(calls)
+        steps = ", ".join(f"{r['step']} {costs.eur(r['eur'])}" for r in costs.by_step(calls))
+        console.print(
+            f"[dim]Cost: {t['calls']} model calls · "
+            f"{t['input'] + t['cache_read'] + t['cache_write']:,} tokens in, {t['output']:,} out · "
+            f"≈ {costs.eur(t['eur'])}  ({steps})[/dim]"
+        )
+
     if save:
         path = save_report(result, question)
         console.print(f"[green]Report saved → {path}[/green]")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# ── Entry point ────────────────────────────────────────────────────────────────
 
 def main() -> None:
     args = parse_args()
@@ -175,7 +188,7 @@ def main() -> None:
         )
         sys.exit(1)
 
-    client = anthropic.Anthropic(api_key=api_key)
+    client = MeteredClient(anthropic.Anthropic(api_key=api_key))   # counts every call's tokens
     os.makedirs(args.cache_dir, exist_ok=True)
 
     print_banner()
