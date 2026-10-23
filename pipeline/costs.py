@@ -10,8 +10,14 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+import os
+
 PRICES_CHECKED = "22 October 2026"
 USD_TO_EUR = 0.89          # 1 USD in EUR on 21 Oct 2026; editable in the app
+
+# Multiplies every list price. Amazon Bedrock's in-region endpoints cost 10% more than global ones,
+# so the AWS deployment sets PRICE_FACTOR=1.10.
+PRICE_FACTOR = float(os.getenv("PRICE_FACTOR", "1"))
 
 # USD per 1 million tokens: input, cache write (5 min), cache read, output.
 # Anthropic: platform.claude.com/docs/en/about-claude/pricing
@@ -125,7 +131,7 @@ def cost_eur(usage: Usage, prices: dict = PRICES, usd_to_eur: float = USD_TO_EUR
             p = long_price
     inp, write, read, out = p
     usd = (usage.input * inp + usage.cache_write * write + usage.cache_read * read + usage.output * out) / 1e6
-    return usd * usd_to_eur
+    return usd * usd_to_eur * PRICE_FACTOR
 
 
 def total(usages, prices: dict = PRICES, usd_to_eur: float = USD_TO_EUR) -> dict:
