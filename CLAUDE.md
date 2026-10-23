@@ -66,3 +66,10 @@ LexTreeRAG answers legal questions by navigating structured Article Trees — no
 - `app.py` wraps `build_tree` to store each law's indexing cost in its cached JSON (`index_usage`) and to count what a cache hit saved.
 - `pipeline/usage.py` is the ledger kept in the browser's localStorage (read once per visit with a `st.components.v2` component, written with `components.html`). Budget: AI answers stop at 100%.
 - `pipeline/demo.py` records a finished answer (with its real token counts) and replays files from `demo/examples/` in Demo mode.
+
+## AWS deployment (branch `aws`)
+
+- `LLM_PROVIDER=bedrock` switches the app to AWS mode: `pipeline/llm_client.py` builds an `AnthropicBedrockMantle` client (region `AWS_REGION`, default `eu-north-1`) wrapped in `MeteredClient(model_map=...)`, which sends Bedrock model IDs while usage keeps the plain names. Opus 4.6 is not on Bedrock's Messages-API endpoint, so the default answer model there is `claude-opus-5-5`.
+- `pipeline/identity.py` reads the user and team from the ALB `x-amzn-oidc-data` header; `pipeline/usage_store.py` keeps the ledger per user and atomic team-month counters in DynamoDB (`USAGE_TABLE`); `TEAM_MONTHLY_BUDGET_EUR` stops AI answers per team.
+- `infra/` is Terraform (VPC, ALB with sticky sessions, ECS Fargate, EFS cache at `/data`, DynamoDB, IAM with `bedrock-mantle:CreateInference`, optional ACM + Cognito login, GitHub OIDC deploy role). Guide: `docs/aws.md`.
+
