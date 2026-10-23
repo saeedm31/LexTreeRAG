@@ -42,6 +42,7 @@ nav:
     - References Tab: references.md
     - Cache Manager: cache-manager.md
     - Usage and Cost: usage.md
+    - Deploy on AWS: aws.md
   - Technical Reference:
     - Pipeline Architecture: pipeline.md
 
