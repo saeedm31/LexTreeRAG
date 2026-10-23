@@ -1,0 +1,44 @@
+<section id="deploy" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5541C">Shipping and running</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">Ship with a push, set up with one command</h2>
+</div>
+<div style="display:flex;align-items:center;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">1. You push code</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">to the aws branch on GitHub</p>
+</div>
+<x-connector style="width:56px;color:#5A6478;border-width:3px"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">2. GitHub checks</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Tests run, then the app image is built</p>
+</div>
+<x-connector style="width:56px;color:#5A6478;border-width:3px"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">3. Image stored</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">in Amazon ECR, your private image store</p>
+</div>
+<x-connector style="width:56px;color:#5A6478;border-width:3px"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">4. App updated</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">ECS swaps in the new version</p>
+</div>
+</div>
+<p style="font-size:26px;line-height:1.4;color:#4A5568;width:1600px">GitHub signs in to AWS with a short-lived token (OIDC), so no AWS keys are stored in GitHub.</p>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#14213D;border-radius:16px;padding:32px 40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:56px;font-weight:700;line-height:1.1;color:#F2A65A">1 command</h2>
+<p style="font-size:26px;line-height:1.4;color:#D5DCE8">terraform apply builds the whole setup in about 15 minutes.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#14213D;border-radius:16px;padding:32px 40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:56px;font-weight:700;line-height:1.1;color:#F2A65A">1 command</h2>
+<p style="font-size:26px;line-height:1.4;color:#D5DCE8">terraform destroy removes it all, so you stop paying.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#14213D;border-radius:16px;padding:32px 40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:56px;font-weight:700;line-height:1.1;color:#F2A65A">€70–100</h2>
+<p style="font-size:26px;line-height:1.4;color:#D5DCE8">a month: rough cost of the setup while it runs, plus AI calls.</p>
+</div>
+</div>
+<aside>Shipping a new version is a push. Code goes to the aws branch on GitHub. GitHub runs the tests and builds the app image, stores it in Amazon ECR, and tells AWS to swap in the new version. GitHub signs in to AWS with a short-lived token, so no AWS keys sit in GitHub. The whole setup is written in Terraform: one command creates it in about 15 minutes, and one command removes it. While it runs, the setup costs very roughly 70 to 100 euros a month, mostly the NAT gateway and the load balancer, plus whatever the AI calls cost.</aside>
+</section>

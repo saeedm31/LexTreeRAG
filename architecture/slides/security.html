@@ -1,0 +1,39 @@
+<section id="security" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5541C">Security and data</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">Built for a company’s rules</h2>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Globe" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">Data stays in the EU</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Claude runs on Bedrock in Stockholm. AWS says prompts are not shared with the model maker.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Key" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">No API keys</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">The app calls Claude with its AWS role. No secrets in the code or in GitHub.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Users" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">Only the right people</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">First locked to your IP. Then staff sign in (Cognito, which can link to Entra ID or Okta).</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Lock" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">Private servers</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">The app has no public address. It only takes traffic from the load balancer.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Warning" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">Spending limits</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Team budgets in the app, plus an AWS budget email alert for the account.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFEFB;border:1px solid #E2DED4;border-radius:16px;padding:32px">
+<x-icon name="Settings" style="color:#2F5BB7;width:48px;height:48px"></x-icon>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">Fewer outside calls</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Gemini is off on AWS. The only outside call is the search on EUR-Lex.</p>
+</div>
+</div>
+<aside>The questions a company’s security team will ask. Where does the data go? To Bedrock in Stockholm, and AWS states it does not share prompts with the model maker. Where are the keys? There are none; the app uses its AWS role. Who can get in? At first only your own IP address; later staff sign in, and that sign-in can be linked to the company’s Microsoft or Okta accounts. The app servers have no public address. Spend is capped per team, with an extra AWS email alert. And Gemini is switched off so questions do not leave AWS; the only outside call is the search on the public EU law site.</aside>
+</section>

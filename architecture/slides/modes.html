@@ -1,0 +1,18 @@
+<section id="modes" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">Same code, two ways to run</h2>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">One setting switches it: <span style="color:#B5541C">LLM_PROVIDER=bedrock</span></p>
+</div>
+<table style="font-family:'IBM Plex Sans', Arial, sans-serif;font-size:24px;color:#1F2A44">
+<tr style="background:#14213D"><th style="width:26%;color:#F7F5F0"> </th><th style="width:37%;color:#F7F5F0">Public demo</th><th style="width:37%;color:#F7F5F0">Company setup (AWS)</th></tr>
+<tr style="background:#FFFEFB"><td>Where it runs</td><td>Streamlit Community Cloud</td><td>Your AWS account, Stockholm (eu-north-1)</td></tr>
+<tr style="background:#F0EDE6"><td>AI access</td><td>Visitor’s own Anthropic key</td><td>Amazon Bedrock, through the server’s AWS role</td></tr>
+<tr style="background:#FFFEFB"><td>Who can open it</td><td>Anyone with the link</td><td>Your IP only, or staff login (Amazon Cognito)</td></tr>
+<tr style="background:#F0EDE6"><td>Where spend is kept</td><td>In the visitor’s browser</td><td>On the server, per person and per team</td></tr>
+<tr style="background:#FFFEFB"><td>Budget</td><td>Personal, monthly</td><td>Per team, monthly, checked on the server</td></tr>
+<tr style="background:#F0EDE6"><td>Law cache</td><td>One app copy</td><td>Shared by all copies (Amazon EFS)</td></tr>
+<tr style="background:#FFFEFB"><td>Default answer model</td><td>Claude Opus 4.6</td><td>Claude Opus 5.5</td></tr>
+<tr style="background:#F0EDE6"><td>Try without a key</td><td>Yes: recorded real answers</td><td>Not needed</td></tr>
+</table>
+<aside>The same code runs in two places. The public demo runs on Streamlit’s free cloud: visitors bring their own key, or replay recorded answers without one. The company setup runs in the customer’s own AWS account in Stockholm. There are no API keys: the app uses its AWS role to call Claude through Amazon Bedrock. Spend and budgets live on the server, per person and per team. One setting, LLM_PROVIDER=bedrock, switches between the two. On AWS the default answer model is Claude Opus 5.5, because Bedrock’s newer endpoint does not offer Opus 4.6.</aside>
+</section>

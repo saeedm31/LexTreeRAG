@@ -1,0 +1,28 @@
+<section id="tree" data-transition="fade" style="background:#14213D;color:#F7F5F0;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#F2A65A">Why no vector database?</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#F7F5F0">Laws already have a table of contents. We use it.</h2>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1E2D4F;border:2px solid #3A4A6E;border-radius:16px;padding:40px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;line-height:1.2;color:#D5DCE8">The usual way</h3>
+<ul style="font-size:28px;line-height:1.4;color:#BFC8D9">
+<li>Cut documents into chunks</li>
+<li>Turn each chunk into numbers (embeddings)</li>
+<li>Run a vector database to search them</li>
+<li>Chunks can cut across articles</li>
+</ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#24365C;border:2px solid #F2A65A;border-radius:16px;padding:40px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;line-height:1.2;color:#F7F5F0">The LexTreeRAG way</h3>
+<ul style="font-size:28px;line-height:1.4;color:#E6EBF3">
+<li>Each law is split by its own articles</li>
+<li>AI reads the list of articles: about 3,000 tokens for a 60-article law</li>
+<li>Opens only articles that score 4 or more out of 10</li>
+<li>Answers cite exact articles. Nothing extra to run.</li>
+</ul>
+</div>
+</div>
+<aside>Most AI search tools cut documents into small chunks, turn them into numbers and need a special database to search them. Laws do not need that. They already have articles and a clear structure. So the AI reads the list of articles with a one-line summary each, which is small and cheap, and picks the ones that matter. The result: answers that point to exact articles, and one less system to run and pay for.</aside>
+</section>

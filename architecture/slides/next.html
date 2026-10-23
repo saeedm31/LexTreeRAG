@@ -1,0 +1,33 @@
+<section id="next" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5541C">Next steps</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">From test setup to daily company use</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FCEBDD;border:2px solid #B5541C;border-radius:16px;padding:28px 40px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#14213D">First: one test deploy</h3>
+<p style="font-size:26px;line-height:1.4;color:#1F2A44">The code and the guide are ready and checked, but not yet run in a real AWS account. Step one is to run the guide and confirm Claude answers through Bedrock.</p>
+</div>
+<div style="display:flex;flex-direction:column">
+<div style="display:flex;gap:32px;align-items:baseline;border-top:1px solid #D9D4C8;padding:16px 0px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:700;color:#B5541C;width:48px">1</p>
+<p style="font-size:28px;line-height:1.4;color:#1F2A44">Keep the Terraform state in S3, so a team can run the setup together.</p>
+</div>
+<div style="display:flex;gap:32px;align-items:baseline;border-top:1px solid #D9D4C8;padding:16px 0px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:700;color:#B5541C;width:48px">2</p>
+<p style="font-size:28px;line-height:1.4;color:#1F2A44">Connect the company login (Entra ID or Okta) and map its groups to teams.</p>
+</div>
+<div style="display:flex;gap:32px;align-items:baseline;border-top:1px solid #D9D4C8;padding:16px 0px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:700;color:#B5541C;width:48px">3</p>
+<p style="font-size:28px;line-height:1.4;color:#1F2A44">Move the law cache to S3 and read the most-used laws overnight.</p>
+</div>
+<div style="display:flex;gap:32px;align-items:baseline;border-top:1px solid #D9D4C8;padding:16px 0px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:700;color:#B5541C;width:48px">4</p>
+<p style="font-size:28px;line-height:1.4;color:#1F2A44">Tag AI spend per team in AWS, so finance sees it in Cost Explorer.</p>
+</div>
+<div style="display:flex;gap:32px;align-items:baseline;border-top:1px solid #D9D4C8;border-bottom:1px solid #D9D4C8;padding:16px 0px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:700;color:#B5541C;width:48px">5</p>
+<p style="font-size:28px;line-height:1.4;color:#1F2A44">Add a web firewall (AWS WAF) and a private link to Bedrock.</p>
+</div>
+</div>
+<aside>To be honest about where we are: the AWS code and the step-by-step guide are ready, and the automatic checks pass, but nobody has run it in a real AWS account yet. That is the first step. After that, five things make it ready for daily use: shared Terraform state so a team can manage it, the company’s own login, a law cache that is filled overnight, spend per team visible to finance, and extra network protection.</aside>
+</section>

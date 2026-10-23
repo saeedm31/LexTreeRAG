@@ -1,0 +1,54 @@
+<section id="aws" data-transition="fade" style="background:#F7F5F0;color:#1F2A44;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#14213D">Company setup on AWS</h2>
+<!-- U 0,280,230,140  L 320,250,300,200  APP 690,170,480,320  B 1260,0,404,160  N 1260,270,404,160  O 1260,540,404,160  EFS 690,560,220,140  DDB 950,560,220,140 -->
+<div style="position:relative;width:1664px;height:700px">
+<div style="position:absolute;left:0;top:280px;width:230px;height:140px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Staff</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Web browser</p>
+</div>
+<div style="position:absolute;left:320px;top:250px;width:300px;height:200px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Load balancer</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">HTTPS and sign-in (Cognito)</p>
+</div>
+<div style="position:absolute;left:690px;top:170px;width:480px;height:320px;background:#14213D;border:2px solid #14213D;border-radius:16px;padding:32px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:32px;font-weight:600;line-height:1.2;color:#F7F5F0">App containers</h3>
+<ul style="font-size:24px;line-height:1.4;color:#D5DCE8">
+<li>Amazon ECS Fargate</li>
+<li>1 to 3 copies, more when busy</li>
+<li>Private network, no public address</li>
+</ul>
+</div>
+<div style="position:absolute;left:1260px;top:0;width:404px;height:160px;background:#E8EFFB;border:2px solid #2F5BB7;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Amazon Bedrock</h3>
+<p style="font-size:24px;line-height:1.4;color:#1F2A44">Claude models, in Stockholm</p>
+</div>
+<div style="position:absolute;left:1260px;top:270px;width:404px;height:160px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">EUR-Lex</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Reached through a NAT gateway</p>
+</div>
+<div style="position:absolute;left:1260px;top:540px;width:404px;height:160px;background:#FFFEFB;border:2px dashed #C9C3B6;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Image store, logs</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Amazon ECR · CloudWatch</p>
+</div>
+<div style="position:absolute;left:690px;top:560px;width:220px;height:140px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Law cache</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">Amazon EFS</p>
+</div>
+<div style="position:absolute;left:950px;top:560px;width:220px;height:140px;background:#FFFEFB;border:2px solid #C9C3B6;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:8px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:28px;font-weight:600;line-height:1.2;color:#14213D">Usage log</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5568">DynamoDB</p>
+</div>
+<x-connector x1="230" y1="350" x2="320" y2="350" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="620" y1="350" x2="690" y2="350" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1170" y1="230" x2="1215" y2="230" head="none" style="color:#2F5BB7;border-width:3px"></x-connector>
+<x-connector x1="1215" y1="230" x2="1215" y2="80" head="none" style="color:#2F5BB7;border-width:3px"></x-connector>
+<x-connector x1="1215" y1="80" x2="1260" y2="80" style="color:#2F5BB7;border-width:3px"></x-connector>
+<x-connector x1="1170" y1="350" x2="1260" y2="350" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1170" y1="440" x2="1215" y2="440" head="none" style="color:#8A94A6;border-width:3px;border-style:dashed"></x-connector>
+<x-connector x1="1215" y1="440" x2="1215" y2="620" head="none" style="color:#8A94A6;border-width:3px;border-style:dashed"></x-connector>
+<x-connector x1="1215" y1="620" x2="1260" y2="620" head="none" style="color:#8A94A6;border-width:3px;border-style:dashed"></x-connector>
+<x-connector x1="800" y1="490" x2="800" y2="560" head="both" style="color:#5A6478;border-width:3px"></x-connector>
+<x-connector x1="1060" y1="490" x2="1060" y2="560" head="both" style="color:#5A6478;border-width:3px"></x-connector>
+</div>
+<aside>This is how it runs inside a company’s own AWS account, in Stockholm. Staff open the app in a browser. A load balancer receives them; with a domain it adds HTTPS and a sign-in page (Amazon Cognito). The app runs in containers on ECS Fargate, in a private network with no public address. It starts with 1 copy and grows to 3 when busy. It calls Claude through Amazon Bedrock in the same region, with no API key. It reaches EUR-Lex through a NAT gateway. All copies share one law cache on Amazon EFS, and spend per person and per team is kept in DynamoDB. The app image lives in Amazon ECR and the logs go to CloudWatch. All of this is created by Terraform with one command.</aside>
+</section>
