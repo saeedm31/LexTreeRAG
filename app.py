@@ -39,6 +39,9 @@ from pipeline.pdf_archive       import scan_inbox, list_archived
 from pipeline                   import costs, demo
 from pipeline                   import usage as usage_ledger
 from pipeline.metering          import Meter, MeteredClient, MeteredGemini, ONE_TIME_STEPS
+from pipeline                   import llm_client
+from pipeline.identity          import current_user
+from pipeline.usage_store       import UsageStore, team_budget
 
 import streamlit.components.v1 as components
 try:
@@ -97,7 +100,7 @@ def _init():
         "retry_count":         0,      # number of retries for last query
         # ── cost tracking ──
         "meter":               None,   # every model call of this session (pipeline.metering.Meter)
-        "answer_model":        "claude-opus-4-6",
+        "answer_model":        llm_client.default_answer_model(),
         "fx":                  costs.USD_TO_EUR,
         "prices":              dict(costs.PRICES),
         "cache_saved_run":     0.0,    # euros the law cache saved during the current question
@@ -112,10 +115,31 @@ _init()
 if st.session_state.meter is None:
     st.session_state.meter = Meter()
 _today = datetime.now().date()
+
+# ── AWS mode (LLM_PROVIDER=bedrock): Claude via Amazon Bedrock, users from the login, usage on the server ──
+AWS_MODE = llm_client.is_bedrock()
+if AWS_MODE and "user" not in st.session_state:
+    try:
+        _headers = st.context.headers
+    except Exception:
+        _headers = {}
+    st.session_state.user  = current_user(_headers)
+    st.session_state.store = UsageStore.from_env()
+    st.session_state.client = llm_client.bedrock_client(st.session_state.meter)
+    st.session_state.api_key_ok = True
+
 if "ledger" not in st.session_state:
     st.session_state.ledger        = usage_ledger.empty(_today)
     st.session_state.ledger_loaded = False
     st.session_state.ledger_saved  = None
+    if AWS_MODE:                                   # the ledger lives on the server, not in the browser
+        st.session_state.ledger_loaded = True
+        if st.session_state.store:
+            try:
+                st.session_state.ledger = st.session_state.store.load(st.session_state.user.id, _today)
+                st.session_state.ledger_saved = usage_ledger.encode(st.session_state.ledger)
+            except Exception as exc:
+                st.warning(f"Could not load usage from the server: {exc}")
 
 CACHE_DIR = os.getenv("CACHE_DIR", "./data/cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -1083,6 +1107,13 @@ def _account(question: str, mark: int, prefix: str = "") -> dict:
     if calls or saved:
         usage_ledger.record(st.session_state.ledger, calls, question, _today,
                             st.session_state.prices, st.session_state.fx, saved=saved, prefix=prefix)
+    if AWS_MODE and st.session_state.store and calls:       # team spend, for the team budget
+        try:
+            _t = costs.total(calls, st.session_state.prices, st.session_state.fx)
+            st.session_state.store.add_team(st.session_state.user.team, _today.strftime("%Y-%m"),
+                                            _t["eur"] or 0.0, _t["calls"])
+        except Exception as exc:
+            st.warning(f"Could not save team usage: {exc}")
     now = datetime.now().strftime("%H:%M:%S")
     for u in calls:
         st.session_state.session_log.append({
@@ -1099,6 +1130,13 @@ def _budget_reached() -> bool:
         st.error(f"Monthly AI budget reached ({costs.eur(b['spent'])} of {costs.eur(b['budget'])}). "
                  "AI answers are paused until next month. Raise the budget or reset the counter in 💶 Usage.")
         return True
+    if AWS_MODE and st.session_state.store and team_budget() > 0:
+        team = st.session_state.user.team
+        spent = st.session_state.store.team_month(team, _today.strftime("%Y-%m"))["eur"]
+        if spent >= team_budget():
+            st.error(f"Team **{team}** has reached its monthly AI budget ({costs.eur(spent)} of "
+                     f"{costs.eur(team_budget())}). AI answers are paused until next month.")
+            return True
     return False
 
 
@@ -1119,9 +1157,10 @@ with st.sidebar:
     st.divider()
 
     # ── Mode: recorded demo answers (no key) or live with your key ────────────
-    _examples = demo.load_all()
+    _examples = [] if AWS_MODE else demo.load_all()
     _has_env_key = bool(os.getenv("ANTHROPIC_API_KEY"))
-    app_mode = st.radio(
+    api_key, gemini_key = "", ""
+    app_mode = "⚡ Live (Amazon Bedrock)" if AWS_MODE else st.radio(
         "Mode",
         ["▶️ Demo (recorded answers, no key)", "⚡ Live (your API key)"],
         index=1 if (_has_env_key or st.session_state.api_key_ok or not _examples) else 0,
@@ -1134,14 +1173,18 @@ with st.sidebar:
         api_key, gemini_key = "", ""
 
     # API key
-    api_key = api_key if demo_mode else st.text_input(
+    api_key = api_key if (demo_mode or AWS_MODE) else st.text_input(
         "Anthropic API Key",
         value=os.getenv("ANTHROPIC_API_KEY", ""),
         type="password",
         placeholder="sk-ant-…",
         help="Set in .env to avoid entering it every time.",
     )
-    if demo_mode:
+    if AWS_MODE:
+        _u = st.session_state.user
+        st.success(f"Claude via Amazon Bedrock · {llm_client.AWS_REGION}", icon="✅")
+        st.caption(f"Signed in as **{_u.email or _u.id}** · team **{_u.team}**")
+    elif demo_mode:
         pass
     elif api_key and not st.session_state.api_key_ok:
         with st.spinner("Validating key…"):
@@ -1159,7 +1202,9 @@ with st.sidebar:
 
     # ── Answer model + spend ──────────────────────────────────────────────────
     st.markdown("**✍️ Answer written by**")
-    _models = list(costs.ANSWER_MODELS)
+    _models = llm_client.answer_models() or list(costs.ANSWER_MODELS)
+    if st.session_state.answer_model not in _models:
+        st.session_state.answer_model = _models[0]
     st.session_state.answer_model = st.selectbox(
         "Answer model", _models, index=_models.index(st.session_state.answer_model),
         format_func=lambda m: costs.ANSWER_MODELS[m], label_visibility="collapsed",
@@ -1186,7 +1231,8 @@ with st.sidebar:
 
     # ── Optional Gemini key ───────────────────────────────────────────────────
     st.markdown("**🔮 Gemini (optional — hybrid mode)**")
-    gemini_key = gemini_key if demo_mode else st.text_input(
+    _gemini_on = not AWS_MODE or os.getenv("ENABLE_GEMINI") == "1"
+    gemini_key = gemini_key if (demo_mode or not _gemini_on) else st.text_input(
         "Google Gemini API Key",
         value=os.getenv("GEMINI_API_KEY", ""),
         type="password",
@@ -1194,7 +1240,9 @@ with st.sidebar:
         help="Optional. When set, a second answer using Gemini + Google Search "
              "appears alongside the EUR-Lex answer.",
     )
-    if demo_mode:
+    if not _gemini_on:
+        st.caption("_Off in this deployment: questions would leave AWS_")
+    elif demo_mode:
         st.caption("_Not used in demo mode_")
     elif gemini_key and not st.session_state.gemini_key_ok:
         with st.spinner("Validating Gemini key…"):
@@ -1997,7 +2045,8 @@ with tab_usage:
     st.markdown("### 💶 What the AI answers cost")
     st.caption("Token counts come from the provider's reply. Euros are an estimate: list price per million "
                "tokens × tokens × the USD→EUR rate below; your provider's bill is the real number. The counter "
-               "is kept in this browser only (local storage). Your API key is never stored.")
+               + ("is kept on the server for your account and team." if AWS_MODE else
+                  "is kept in this browser only (local storage). Your API key is never stored."))
     _led   = st.session_state.ledger
     _log   = st.session_state.session_log
     _s_eur = sum(r["eur"] or 0 for r in _log)
@@ -2022,6 +2071,14 @@ with tab_usage:
         st.error("Budget reached: AI answers are paused until next month, a higher budget or a reset.")
     elif _bs["level"] == "warn":
         st.warning("Over 80% of the monthly budget is used.")
+    if AWS_MODE and st.session_state.store:
+        try:
+            _tm = st.session_state.store.team_month(st.session_state.user.team, _today.strftime("%Y-%m"))
+            st.caption(f"👥 Team **{st.session_state.user.team}** this month: **{costs.eur(_tm['eur'])}** "
+                       f"from {_tm['questions']} question(s)"
+                       + (f", budget {costs.eur(team_budget())}" if team_budget() else "") + ".")
+        except Exception:
+            pass
     if _led.get("free"):
         st.caption(f"▶️ {_led['free']} demo replay(s) are included as if they were paid (marked *replay*); "
                    "nothing was charged for them.")
@@ -2268,7 +2325,15 @@ export default function(component) {
 }
 """ % usage_ledger.STORAGE_KEY
 
-if not st.session_state.ledger_loaded:
+if AWS_MODE:
+    _enc = usage_ledger.encode(st.session_state.ledger)
+    if st.session_state.store and _enc != st.session_state.ledger_saved:
+        try:
+            st.session_state.store.save(st.session_state.user.id, st.session_state.ledger)
+            st.session_state.ledger_saved = _enc
+        except Exception as exc:
+            st.warning(f"Could not save usage to the server: {exc}")
+elif not st.session_state.ledger_loaded:
     try:
         _reader = components_v2.component("lextree_usage_reader", js=_READ_LEDGER)
         _stored = _reader(key="lextree_usage_reader", default={"stored": None},
