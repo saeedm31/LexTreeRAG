@@ -9,7 +9,7 @@
 [![Tests](https://github.com/saeedm31/LexTreeRAG/actions/workflows/tests.yml/badge.svg)](https://github.com/saeedm31/LexTreeRAG/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-📖 **[Documentation](https://saeedm31.github.io/LexTreeRAG/)** · 🚀 **[Quick start](#-quick-start)** · 🧠 **[How it works](#-how-it-works)**
+▶️ **[Live app](https://sh-lextreerag.streamlit.app)** · 📖 **[Documentation](https://saeedm31.github.io/LexTreeRAG/)** · 🚀 **[Quick start](#-quick-start)** · 🧠 **[How it works](#-how-it-works)**
 
 ![LexTreeRAG chat page](docs/screenshots/chat-page.png)
 
