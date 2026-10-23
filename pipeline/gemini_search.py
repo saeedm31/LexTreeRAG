@@ -23,7 +23,11 @@ except ImportError:
 
 # Preference order for model selection — first substring match wins
 _MODEL_PREFERENCE = [
-    "gemini-2.0-flash-lite",   # free tier, newer
+    "gemini-3.5-flash-lite",   # current Flash-Lite (Oct 2026)
+    "gemini-3.8-flash",        # current Flash
+    "gemini-3.1-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-2.0-flash-lite",   # older models, kept as fallbacks
     "gemini-2.0-flash",        # paid / higher tier
     "gemini-1.5-flash-8b",     # free tier, lightweight
     "gemini-1.5-flash",        # free tier
